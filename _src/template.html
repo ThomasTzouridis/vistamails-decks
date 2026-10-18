@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>{{COMPANY}} × VistaMails</title>
+<link rel="stylesheet" href="../vendor/reset.css"><link rel="stylesheet" href="../vendor/reveal.css" id="rv">
+<script>/* phones: one slide per screen instead of a shrunken 1280x720 stage */if(matchMedia("(max-width:700px)").matches){document.documentElement.classList.add("sphone");document.getElementById("rv").disabled=true}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Slideshow: fixed 1280x720 stage scaled to the window, near-black slides like thevistamails.com, green #1dd27f as the one accent */
+:root{
+  --paper:#041010; --stage:#020a0a; --ink:#ffffff; --muted:#9fb0aa; --line:#1f3a32; --hi:#1dd27f; --hid:#0f8f55; --tile:#0b1c19;
+  --display:"Manrope",system-ui,"Segoe UI",sans-serif;
+  --body:"Manrope",system-ui,"Segoe UI",sans-serif;
+  --mono:"Manrope",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body,.reveal-viewport,.reveal{height:100%;margin:0;background:var(--paper)!important;color:var(--ink);font-family:var(--body)}
+.reveal{font-family:var(--body);color:var(--ink)}
+.reveal .slides section{width:1280px;height:720px;padding:0;text-align:left;background:var(--paper);container-type:inline-size}
+.s{position:absolute;inset:0;background:var(--paper);overflow:hidden;padding:5.5cqw 6cqw 7cqw;display:flex;flex-direction:column;justify-content:center;width:1280px;height:720px}
+section.present .in{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+section.present .in:nth-child(2){animation-delay:.08s}section.present .in:nth-child(3){animation-delay:.16s}section.present .in:nth-child(4){animation-delay:.24s}section.present .in:nth-child(5){animation-delay:.32s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){section.present .in{animation:none}.track{animation:none!important}}
+.reveal .controls{color:var(--hi)}.reveal .progress{color:var(--hi);height:4px}
+.eyebrow{font:600 1.1cqw var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--hi)}
+h2{font-family:var(--display);font-weight:700;line-height:1.04;margin:1cqw 0 0;font-size:3.8cqw;letter-spacing:-.02em;text-wrap:balance}
+p{margin:0}
+.mark{color:var(--hi)}
+.x{font:300 .7em var(--body);color:var(--muted)}
+.co{font-family:var(--display);font-weight:700;line-height:1.05;letter-spacing:-.01em}
+.dsp{height:1em;width:auto;display:block}
+
+/* cover: text left, the lead's site on the right */
+.cover{padding-right:46cqw}
+.cover .pair{display:flex;align-items:center;flex-wrap:nowrap;gap:2cqw;margin-top:2.4cqw;min-width:0}
+.cover .dsp{height:6.4cqw}
+.cover .x{font-size:3cqw}
+.cover .co{font-size:4cqw}
+.cover .sub{margin-top:3cqw;font-size:2cqw;max-width:32ch;line-height:1.4;color:#e4ece9}
+.cover .prep{margin-top:1.6cqw;font:500 1.3cqw var(--mono);letter-spacing:.04em;color:var(--muted)}
+.cover .site{position:absolute;right:6cqw;top:11cqw;transform:rotate(-1.5deg);width:38cqw;margin:0;border:.1cqw solid var(--line);box-shadow:0 2cqw 5cqw rgba(0,0,0,.6);background:#111}
+.cover .site img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;display:block}
+.cover .site figcaption{font:500 1cqw var(--mono);color:var(--muted);padding:.8cqw 1.2cqw;border-top:.1cqw solid var(--line);background:var(--tile)}
+
+/* what we saw + the system */
+.saw{display:grid;grid-template-columns:36cqw 1fr;gap:4cqw;margin-top:2cqw;align-items:start;flex:1;min-height:0}
+.saw .lines{display:flex;flex-direction:column;justify-content:flex-start;padding-top:.4cqw;gap:1.2cqw;font-size:1.4cqw;line-height:1.45;color:#e4ece9}
+.saw .lines .turn{border-left:.4cqw solid var(--hi);padding-left:1.4cqw;color:#fff}
+.flow{display:flex;flex-direction:column;gap:1cqw;position:relative}
+.flow .lab0{font:600 1cqw var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.2cqw}
+.fs{display:grid;grid-template-columns:4.4cqw 1fr;gap:1.4cqw;align-items:start}
+.fs .n{font:800 2.4cqw/1 var(--mono);color:var(--hi);border-top:.25cqw solid var(--hi);padding-top:.8cqw}
+.fs .lab{font:600 .95cqw var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.fs h3{font:700 1.8cqw/1.1 var(--display);margin:.3cqw 0 .4cqw;letter-spacing:-.01em}
+.fs p{font-size:1.12cqw;line-height:1.42;color:#e4ece9}
+
+/* proof */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1.6cqw;margin-top:1.2cqw;border-top:.12cqw solid var(--line);padding-top:1.1cqw}
+.st{display:flex;flex-direction:column;gap:.5cqw}
+.st b{font:800 2.8cqw/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--hi);letter-spacing:-.02em}
+.st span{font:500 1cqw/1.35 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.proof{display:grid;grid-template-columns:1fr 36cqw;gap:2.6cqw;margin-top:1.2cqw;align-items:start}
+.cases{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4cqw}
+.case{display:flex;flex-direction:column;gap:.5cqw;background:var(--tile);padding:1.3cqw 1.4cqw 1.4cqw;border-top:.25cqw solid var(--hi)}
+.case .yr{font:600 .9cqw var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.case b{font:800 2.3cqw/1 var(--mono);color:#fff;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.case p{font-size:1.02cqw;line-height:1.38;color:#cdd8d4}
+.gbox{background:var(--tile);padding:1.3cqw 1.7cqw;border-top:.25cqw solid var(--hi);display:flex;flex-direction:column;gap:.6cqw;align-self:start}
+.gbox .lab{font:600 1cqw var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.gbox h3{font:700 1.9cqw/1.05 var(--display);margin:0;letter-spacing:-.02em}
+.gbox p{font-size:1.02cqw;line-height:1.38;color:#e4ece9}
+.marquee{margin-top:1.1cqw;border-top:.12cqw solid var(--line);padding-top:.8cqw}
+.tw{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.marquee .lab{font:600 .85cqw var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.7cqw}
+.track{display:flex;align-items:center;gap:4.5cqw;width:max-content;animation:roll 36s linear infinite}
+.track img{height:2.2cqw;width:auto;max-width:12cqw;object-fit:contain;display:block;opacity:.85}
+@keyframes roll{to{transform:translateX(-50%)}}
+
+/* lead logo */
+.ll{display:block;width:auto;max-width:24cqw;object-fit:contain}
+.cover .ll{height:5cqw;max-width:23cqw;min-width:0;flex:0 1 auto}
+.cover .co{min-width:0}.talk .ll{height:4.6cqw;max-width:30cqw}
+.llb{background:#fff;padding:.9cqw 1.4cqw;border-radius:.5cqw;display:inline-flex}
+.llb .ll{height:3.8cqw}.talk .llb .ll{height:3.4cqw}
+
+/* next slide pill, bottom center of every slide but the last */
+.reveal .nx,.nx{cursor:pointer;appearance:none;-webkit-appearance:none;margin:0;position:absolute;left:50%;bottom:1.5cqw;transform:translateX(-50%);z-index:5;display:inline-flex;align-items:center;gap:.75cqw;padding:.85cqw 1.5cqw .85cqw 1.8cqw;border:.12cqw solid rgba(255,255,255,.4);border-radius:999px;background:rgba(4,16,16,.75);color:#fff;font:600 1.2cqw/1 var(--body);letter-spacing:.01em;white-space:nowrap;text-decoration:none;transition:border-color .2s,background .2s}
+.nx svg{width:1.15cqw;height:1.15cqw;color:var(--hi);flex:none}
+.nx:hover,.nx:focus-visible{border-color:var(--hi);background:var(--tile);outline:none}
+
+/* talk */
+.talk{display:grid;grid-template-columns:1fr 38cqw;padding:0;align-items:stretch}
+.talk .l{padding:5.5cqw 6cqw;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;gap:2.4cqw}
+.talk h2{font-size:4.6cqw}
+.btn{display:inline-flex;align-items:center;gap:1cqw;background:var(--hi);color:#041010;text-decoration:none;font:700 1.5cqw var(--mono);padding:1.3cqw 2.4cqw;border-radius:999px}
+.btn:hover,.btn:focus-visible{background:#fff;outline:.2cqw solid var(--hi)}
+.talk .pair{display:flex;align-items:center;justify-content:flex-start;gap:1.6cqw}
+.talk .dsp{height:5.6cqw}
+.talk .x{font-size:2.4cqw}
+.talk .co{font-size:2.6cqw}
+.contact{font:500 1.15cqw/1.6 var(--mono);color:var(--muted)}
+.contact.lead{color:#e4ece9;font-size:1.5cqw;line-height:1.5}
+.talk .r{position:relative;background:#222 url(../assets/img/umesh.jpg) 50% 20%/cover no-repeat;margin:0}
+.talk .r figcaption{position:absolute;left:2.4cqw;bottom:2.4cqw;display:flex;flex-direction:column;gap:.3cqw;background:var(--paper);padding:1cqw 1.4cqw;border-left:.3cqw solid var(--hi)}
+.talk .r b{font:700 1.8cqw/1 var(--display)}
+.talk .r span{font:500 1cqw var(--mono);color:var(--muted)}
+</style>
+<style>/* keep the arrow buttons in scroll view */.reveal-scroll .reveal .controls{display:block!important;position:fixed}</style>
+<style>
+/* ===== phone deck (html.sphone, set in head for screens up to 700px): one slide per screen, swipe or the bar at the bottom to move ===== */
+html.sphone,html.sphone body{background:var(--paper);height:100%;overflow:hidden;-webkit-text-size-adjust:100%}
+html.sphone .reveal{position:static;width:auto;height:auto}
+html.sphone .slides{position:static;width:auto;height:calc(100dvh - 56px - env(safe-area-inset-bottom,0px));overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scroll-behavior:smooth}
+html.sphone .slides>section{display:block;width:auto;height:auto;padding:0;container-type:normal}
+html.sphone .slides>section>section{display:block;width:auto;height:calc(100dvh - 56px - env(safe-area-inset-bottom,0px));padding:0;container-type:normal;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+html.sphone .s{position:static;width:auto;height:100%;padding:22px 18px 18px;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;overscroll-behavior:contain}
+html.sphone .in{animation:none!important}
+html.sphone .s>*{min-width:0;max-width:100%;flex-shrink:0}
+html.sphone .s:not(.cover):not(.talk)>:first-child{margin-top:auto}
+html.sphone .s:not(.cover):not(.talk)>:last-child{margin-bottom:auto}
+html.sphone img{max-width:100%}
+html.sphone .eyebrow{font-size:10px;letter-spacing:.14em}
+html.sphone h2{font-size:28px;margin-top:6px}
+/* bottom bar */
+.pnav{display:none}
+html.sphone .pnav{position:fixed;left:0;right:0;bottom:0;height:calc(56px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:space-between;padding:0 10px env(safe-area-inset-bottom,0px);background:var(--stage);color:var(--ink);border-top:1px solid var(--line);z-index:50}
+html.sphone .nx{display:none!important}
+html.sphone .pb{width:64px;height:44px;border:0;border-radius:4px;background:var(--hi);color:#041010;font:700 26px/44px var(--body);cursor:pointer;-webkit-tap-highlight-color:transparent}
+html.sphone .pb[disabled]{opacity:.25}
+html.sphone .pc{font:500 13px var(--mono);letter-spacing:.08em;display:flex;align-items:center;gap:6px;color:var(--muted)}
+html.sphone .pc b{font:700 22px/1 var(--mono);color:var(--hi)}
+html.sphone .pd{display:flex;gap:5px;margin-left:10px}
+html.sphone .pd i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3)}
+html.sphone .pd i.on{background:var(--hi)}
+html.sphone .llb{padding:7px 10px;border-radius:4px}
+/* cover */
+html.sphone .cover{padding-right:18px;padding-top:22px;justify-content:center}
+html.sphone .cover .pair{flex-wrap:nowrap;gap:12px;margin-top:14px}
+html.sphone .cover .pair>*{min-width:0}
+html.sphone .cover .dsp{height:40px;flex:none}
+html.sphone .cover .x{font-size:20px;flex:none}
+html.sphone .cover .co{font-size:22px;flex:1 1 auto;overflow-wrap:anywhere}
+html.sphone .cover .ll{height:40px;width:auto;max-width:180px;object-fit:contain;object-position:left center}
+html.sphone .cover .llb{flex:none}
+html.sphone .cover .llb .ll{height:30px;max-width:160px;object-position:center}
+html.sphone .cover .sub{font-size:17px;max-width:none;margin-top:16px}
+html.sphone .cover .prep{font-size:12px;margin-top:8px}
+html.sphone .cover .site{position:static;transform:none;width:auto;margin-top:18px;border-width:1px;box-shadow:0 8px 20px rgba(0,0,0,.5)}
+html.sphone .cover .site img{aspect-ratio:16/10}
+html.sphone .cover .site figcaption{font-size:10px;padding:6px 10px;border-top-width:1px}
+/* saw + flow */
+html.sphone .saw{grid-template-columns:1fr;gap:16px;margin-top:14px;flex:none}
+html.sphone .saw .lines{font-size:14.5px;gap:9px;line-height:1.4;padding-top:0}
+html.sphone .saw .lines .turn{border-left-width:3px;padding-left:12px}
+html.sphone .flow{gap:10px}
+html.sphone .flow .lab0{font-size:9px}
+html.sphone .fs{grid-template-columns:32px 1fr;gap:10px}
+html.sphone .fs .n{font-size:18px;border-top-width:2px;padding-top:5px}
+html.sphone .fs .lab{font-size:9px}
+html.sphone .fs h3{font-size:16px;margin:2px 0 2px}
+html.sphone .fs p{font-size:12.5px;line-height:1.35}
+/* proof */
+html.sphone .stats{grid-template-columns:repeat(2,1fr);gap:10px 12px;margin-top:12px;padding-top:12px;border-top-width:1px}
+html.sphone .st{gap:2px}
+html.sphone .st b{font-size:24px}
+html.sphone .st span{font-size:9px}
+html.sphone .proof{grid-template-columns:1fr;gap:12px;margin-top:12px}
+html.sphone .cases{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+html.sphone .case{padding:10px 10px 12px;gap:3px;border-top-width:2px}
+html.sphone .case .yr{font-size:8px;letter-spacing:.06em;line-height:1.3}
+html.sphone .case b{font-size:17px}
+html.sphone .case p{font-size:10px;line-height:1.3}
+html.sphone .gbox{padding:12px 14px 14px;border-top-width:2px;gap:5px}
+html.sphone .gbox .lab{font-size:9px}
+html.sphone .gbox h3{font-size:19px}
+html.sphone .gbox p{font-size:12.5px;line-height:1.4}
+html.sphone .marquee{margin-top:12px;padding-top:10px;border-top-width:1px}
+html.sphone .marquee .lab{font-size:8px;margin-bottom:8px}
+html.sphone .track{gap:28px}
+html.sphone .track img{height:18px;max-width:80px}
+/* talk */
+html.sphone .talk{display:flex;padding:22px 18px;justify-content:center}
+html.sphone .talk .l{padding:0;gap:18px;align-items:center;text-align:center}
+html.sphone .talk h2{font-size:30px}
+html.sphone .btn{font-size:16px;padding:13px 22px;gap:8px}
+html.sphone .talk .pair{flex-wrap:nowrap;gap:12px;justify-content:center}
+html.sphone .talk .pair>*{min-width:0}
+html.sphone .talk .dsp{height:36px;flex:none}
+html.sphone .talk .x{font-size:18px;flex:none}
+html.sphone .talk .co{font-size:20px;flex:0 1 auto;overflow-wrap:anywhere}
+html.sphone .talk .ll{height:36px;width:auto;max-width:180px;object-fit:contain}
+html.sphone .talk .llb{flex:none}
+html.sphone .talk .llb .ll{height:28px;max-width:160px}
+html.sphone .contact{font-size:12px}
+html.sphone .contact.lead{font-size:14px}
+html.sphone .talk .r{flex:1 1 auto;min-height:160px;margin-top:18px;background-position:50% 15%}
+html.sphone .talk .r figcaption{left:12px;bottom:12px;padding:8px 10px;border-left-width:2px}
+html.sphone .talk .r b{font-size:15px}
+html.sphone .talk .r span{font-size:10px}
+</style>
+</head>
+<body>
+<div class="reveal"><div class="slides"><section>
+
+<section aria-label="Cover"><div class="s cover">
+  <div class="eyebrow in">Email and SMS retention plan</div>
+  <div class="pair in"><img class="dsp" src="../assets/logos/vm_wordmark.png" alt="VistaMails"><span class="x">×</span>{{CO_MARK}}</div>
+  <p class="sub in">{{COVER_LINE}}</p>
+  <p class="prep in">Prepared for {{PREPARED}}</p>
+  <figure class="site"><img src="../assets/shots/{{SHOT}}" alt=""><figcaption>{{DOMAIN}}</figcaption></figure>
+  <button class="nx" type="button">What we saw at {{COMPANY}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
+</div></section>
+
+<section aria-label="What we saw"><div class="s">
+  <div class="eyebrow in">What we saw at {{COMPANY}}</div>
+  <h2 class="in">{{SAW_HEAD}}</h2>
+  <div class="saw in">
+    <div class="lines">{{SAW_LINES}}</div>
+    <div class="flow">
+      <span class="lab0">The segment reactivation system, first 60 days</span>
+      <div class="fs"><span class="n">01</span><div><span class="lab">Days 1 to 3 · Audit</span><h3>Find the dormant revenue</h3><p>Full Klaviyo audit and a map of every segment that stopped buying: lapsed customers, abandoned carts, one-time buyers, unengaged subscribers. {{AUDIT_TAIL}}</p></div></div>
+      <div class="fs"><span class="n">02</span><div><span class="lab">Days 3 to 14 · Build</span><h3>Flows that bring them back</h3><p>Win-back, abandonment, post-purchase and VIP flows written, designed and live by day 14. Deliverability fixed first so the emails actually land in the inbox.</p></div></div>
+      <div class="fs"><span class="n">03</span><div><span class="lab">Day 14 onward · Scale</span><h3>Campaigns, tests, reports</h3><p>Three to four campaigns a week to the right segments, weekly A/B tests, SMS where it earns its place, and a report in your inbox every week.</p></div></div>
+    </div>
+  </div>
+  <button class="nx" type="button">The proof and the guarantee<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
+</div></section>
+
+<section aria-label="Proof and guarantee"><div class="s">
+  <div class="eyebrow in">The proof and the guarantee</div>
+  <h2 class="in">{{PROOF_HEAD}}</h2>
+  <div class="stats in">
+    <div class="st"><b>120+</b><span>eCommerce brands served</span></div>
+    <div class="st"><b>$85M+</b><span>attributed email revenue</span></div>
+    <div class="st"><b>35X</b><span>overall return on our fee</span></div>
+    <div class="st"><b>31%</b><span>of revenue from email, client average</span></div>
+  </div>
+  <div class="proof in">
+    <div class="cases">
+      <div class="case"><span class="yr">Fashion brand · 90 days</span><b>£2.5K → £258K</b><p>Monthly email revenue in the first 90 days. Email became 34% of the store's revenue, £177K of it from flows.</p></div>
+      <div class="case"><span class="yr">Apparel brand · 12 months</span><b>+261% YoY</b><p>€515,740 attributed to email in one year, 55% open rates, 40,000+ dormant profiles re-engaged.</p></div>
+      <div class="case"><span class="yr">Skincare brand · 2 months</span><b>$0 → $50K</b><p>From no email program to $25K a month in email revenue, 27% of the store's total.</p></div>
+    </div>
+    <div class="gbox">
+      <span class="lab">The guarantee for {{COMPANY}}</span>
+      <h3>{{G_HEAD}}</h3>
+      <p>{{G_BODY}}</p>
+      <p>If your email is in spam today, we get it into the inbox within 30 days or we work for free until it is.</p>
+    </div>
+  </div>
+  <div class="marquee in" aria-label="Clients"><span class="lab">Trusted by</span><div class="tw"><div class="track">{{LOGOS}}{{LOGOS}}</div></div></div>
+  <button class="nx" type="button">Let's talk<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
+</div></section>
+
+<section aria-label="Let's talk"><div class="s talk">
+  <div class="l">
+    <h2 class="in">Let's talk about <span class="mark">{{COMPANY}}</span></h2>
+    <p class="contact lead in">{{TALK_TEXT}}</p>
+    <a class="btn in" href="{{BOOKING_URL}}" target="_blank" rel="noopener">Book a call with Umesh →</a>
+    <div class="pair in"><img class="dsp" src="../assets/logos/vm_wordmark.png" alt="VistaMails"><span class="x">×</span>{{CO_MARK}}</div>
+    <p class="contact in">Or just reply to Umesh's message on LinkedIn.<br>thevistamails.com</p>
+  </div>
+  <figure class="r"><figcaption><b>Umesh Pandey</b><span>Co-Founder &amp; CEO, VistaMails</span></figcaption></figure>
+</div></section>
+
+</section></div></div>
+<script src="../vendor/reveal.js"></script><script>if(!document.documentElement.classList.contains("sphone"))Reveal.initialize({width:1280,height:720,margin:0,hash:true,controls:true,controlsTutorial:true,progress:true,transition:"slide",center:false,view:'scroll',scrollProgress:'auto'});
+/* next pill */
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('.nx');if(!a)return;e.preventDefault();
+  if(document.documentElement.classList.contains('sphone')){var sec=a.closest('.slides>section>section'),n=sec&&sec.nextElementSibling;if(n)n.scrollIntoView({block:'start'});}
+  else if(window.__dsGo){__dsGo(1);}else if(window.Reveal){Reveal.next();}});
+/* keep the arrow buttons working in scroll view */
+(function(){
+  var fwd=['right','down'],back=['left','up'];
+  function pos(){var vp=document.querySelector('.reveal-viewport')||document.documentElement,ps=document.querySelectorAll('.scroll-page'),cur=0,best=1e9;
+    ps.forEach(function(p,i){var d=Math.abs(p.offsetTop-vp.scrollTop);if(d<best){best=d;cur=i;}});return {cur:cur,n:ps.length};}
+  function sync(){var q=pos(),first=q.cur===0,last=q.cur>=q.n-1;
+    fwd.concat(back).forEach(function(d){var on=fwd.indexOf(d)>=0?!last:!first;on=on&&(d==='down'||d==='up');
+      document.querySelectorAll('.reveal .controls .navigate-'+d).forEach(function(b){
+        if(on){b.classList.add('enabled');b.removeAttribute('disabled');}else{b.classList.remove('enabled');b.setAttribute('disabled','disabled');}});});}
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.reveal .controls button');if(!b)return;
+    e.preventDefault();e.stopPropagation();if(/navigate-(down|right|next)/.test(b.className))Reveal.next();else Reveal.prev();},true);
+  Reveal.on('ready',sync);Reveal.on('slidechanged',sync);
+  (document.querySelector('.reveal-viewport')||window).addEventListener('scroll',function(){setTimeout(sync,60);},{passive:true});
+  setTimeout(sync,300);
+})();
+/* one slide per scroll gesture, eased */
+(function(){
+  var st=document.createElement('style');st.textContent='.scroll-snap-point{scroll-snap-stop:always}';document.head.appendChild(st);
+  var vp=document.querySelector('.reveal-viewport')||document.documentElement,busy=false,last=0,DUR=850;
+  function pages(){return Array.prototype.slice.call(document.querySelectorAll('.scroll-page'));}
+  function go(dir){
+    var ps=pages();if(!ps.length)return;var y=vp.scrollTop,cur=0,best=1e9;
+    ps.forEach(function(p,i){var d=Math.abs(p.offsetTop-y);if(d<best){best=d;cur=i;}});
+    var nx=Math.max(0,Math.min(ps.length-1,cur+dir));if(nx===cur)return;
+    var from=y,to=ps[nx].offsetTop,t0=performance.now();busy=true;vp.style.scrollSnapType='none';
+    (function step(now){var k=Math.min(1,(now-t0)/DUR),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+      vp.scrollTop=from+(to-from)*e;if(k<1)requestAnimationFrame(step);else{vp.style.scrollSnapType='';setTimeout(function(){busy=false;},150);}})(t0);
+  }
+  window.__dsGo=go;
+  vp.addEventListener('wheel',function(ev){
+    if(!document.querySelector('.reveal-scroll'))return;
+    ev.preventDefault();var now=performance.now(),gap=now-last;last=now;
+    if(busy||gap<220||Math.abs(ev.deltaY)<4)return;go(ev.deltaY>0?1:-1);
+  },{passive:false});
+})();
+</script>
+<nav class="pnav" aria-label="Slides"><button class="pb" data-d="-1" aria-label="Previous slide">&#8249;</button><span class="pc"><b>1</b>/ <span class="pnt">4</span><span class="pd"></span></span><button class="pb" data-d="1" aria-label="Next slide">&#8250;</button></nav>
+<script>
+/* phone deck: the bar at the bottom and the swipe both move one slide at a time */
+(()=>{if(!document.documentElement.classList.contains("sphone"))return;
+const sc=document.querySelector('.slides'),sl=[...document.querySelectorAll('.slides>section>section')],cnt=document.querySelector('.pc b'),dots=document.querySelector('.pd'),bs=[...document.querySelectorAll('.pb')];
+document.querySelector('.pnt').textContent=sl.length;dots.innerHTML=sl.map(()=>'<i></i>').join('');let cur=-1;
+const show=i=>{if(i===cur)return;cur=i;cnt.textContent=i+1;[...dots.children].forEach((d,j)=>d.classList.toggle('on',j===i));bs[0].disabled=i===0;bs[1].disabled=i===sl.length-1;};
+const go=i=>{i=Math.max(0,Math.min(sl.length-1,i));sl[i].scrollIntoView({block:'start'});show(i);};
+bs.forEach(b=>b.addEventListener('click',()=>go(cur+ +b.dataset.d)));
+/* short phones: a slide taller than the screen is zoomed down just enough to fit (never below 0.45) */
+const fit=()=>sl.forEach(x=>{const s=x.querySelector('.s'),kids=[...s.children];kids.forEach(k=>k.style.zoom='');
+  for(let n=0;n<10&&s.scrollHeight>s.clientHeight+1;n++){const z=+(kids[0].style.zoom||1),pad=parseFloat(getComputedStyle(s).paddingTop)+parseFloat(getComputedStyle(s).paddingBottom);
+    const f=Math.max(.45,z*(s.clientHeight-pad)/(s.scrollHeight-pad)-.02);kids.forEach(k=>{if(!k.classList.contains('r'))k.style.zoom=f});}});
+(document.fonts?document.fonts.ready:Promise.resolve()).then(fit);addEventListener('load',fit);addEventListener('resize',fit);
+sc.addEventListener('scroll',()=>show(Math.round(sc.scrollTop/sc.clientHeight)),{passive:true});
+show(0);})();
+</script>
+<script>
+/* deck tracking: opens, deepest slide, time on deck and Book clicks -> mac-hub (logs/events.jsonl, path vm-deck-track).
+   Not tracked: bots/Playwright (navigator.webdriver) and our own browsers (open any deck once with ?vmint=1, undo with ?vmint=0). */
+(()=>{const H='https://macbook-air-von-thomas.tail94ea31.ts.net/webhook/vm-deck-track',slug=(location.pathname.split('/').filter(Boolean).slice(-1)[0]||'').toLowerCase();
+let q=new URLSearchParams(location.search),int=false;try{if(q.get('vmint')==='1')localStorage.vm_int='1';if(q.get('vmint')==='0')localStorage.removeItem('vm_int');int=localStorage.vm_int==='1'}catch(e){}
+if(!slug||navigator.webdriver||int)return;
+const sid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const send=(ev,x)=>{const b=JSON.stringify(Object.assign({slug,sid,ev,t:Date.now()},x||{}));try{if(navigator.sendBeacon&&navigator.sendBeacon(H,new Blob([b],{type:'text/plain'})))return}catch(e){}try{fetch(H,{method:'POST',body:b,keepalive:true,mode:'no-cors'})}catch(e){}};
+const phone=document.documentElement.classList.contains('sphone'),secs=[...document.querySelectorAll('.slides>section>section')],tot=secs.length;
+const idx=()=>{try{if(phone){const b=document.querySelector('.pc b');if(b)return(+b.textContent||1)}
+const ps=[...document.querySelectorAll('.scroll-page')];if(ps.length){const vp=document.querySelector('.reveal-viewport')||document.documentElement,y=vp.scrollTop;let cur=0,best=1e9;ps.forEach((p,i)=>{const d=Math.abs(p.offsetTop-y);if(d<best){best=d;cur=i}});return cur+1}
+return (secs.indexOf(Reveal.getCurrentSlide())+1)||1}catch(e){return 1}};
+let max=0,act=0,last=Date.now();
+send('open',{ref:document.referrer||'',ua:navigator.userAgent,w:innerWidth,tz:(Intl.DateTimeFormat().resolvedOptions().timeZone||''),lang:navigator.language||'',total:tot,phone});
+setInterval(()=>{const n=Date.now();if(document.visibilityState==='visible')act+=n-last;last=n;const i=idx();if(i>max){max=i;if(i>1)send('slide',{max,total:tot})}},1000);
+document.addEventListener('click',e=>{if(e.target.closest('a[href*="calendly"]'))send('book',{max})},true);
+let gone=0;const bye=()=>{if(gone)return;gone=1;send('leave',{secs:Math.round(act/1000),max})};document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')bye();else gone=0});addEventListener('pagehide',bye);
+setInterval(()=>{if(document.visibilityState==='visible')send('ping',{secs:Math.round(act/1000),max})},30000);
+})();
+</script>
+</body>
+</html>
