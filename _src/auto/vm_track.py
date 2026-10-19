@@ -11,7 +11,7 @@ every 4 h), checkout ~/vm-decks. One-to-one the craze&friends model (cf_track.py
    stamp (message 1 is due 3 h after the connection check, message 2 with the deck 4 days after message 1).
 3. Copy docs: one Google Doc per copy (1A, 1B, Klaviyo Campaign 1, Klaviyo Campaign 2), built from the HeyReach sequences in the exact
    format of the craze&friends doc "Messages Craze & Friends" (normal text, bold message lines, one empty line between paragraphs and
-   messages, "Examples for Presentation" heading), rebuilt only when a sequence changes, linked in the Copy tab column B.
+   messages; the "Examples for Presentation" section only once real decks exist, EXAMPLES), rebuilt only when a sequence changes, linked in the Copy tab column B.
 4. Meetings tab (the craze&friends layout, 14 columns): a meeting is (a) a booking on our exclusive Calendly event type
    VistaMails Email Marketing Discovery Call (calendly.com/umesh-gps/vistamails-email-marketing-discovery-call, Umesh's other event types are
    his own and skipped), matched to THE LEAD by the 7 craze&friends rules (resolve()), (b) a HeyReach tag containing "meeting" on the lead,
@@ -223,19 +223,19 @@ def unmojibake(s):
 
 def ensure_tab(sv):
     """Presentation Log tab (frozen bold header) if missing, wide enough for the tracking block, header row kept current."""
-    meta = sv.get(spreadsheetId=SHEET, fields='sheets.properties').execute()['sheets']
+    meta = sv.get(spreadsheetId=SHEET, fields='sheets.properties').execute(num_retries=3)['sheets']
     need = NA + NM + len(TRACK_HDR)
     pl = next((x['properties'] for x in meta if x['properties']['title'] == TAB), None)
     if not pl:
-        r = sv.batchUpdate(spreadsheetId=SHEET, body={'requests': [{'addSheet': {'properties': {'title': TAB, 'gridProperties': {'frozenRowCount': 1, 'columnCount': need + 2}}}}]}).execute()
+        r = sv.batchUpdate(spreadsheetId=SHEET, body={'requests': [{'addSheet': {'properties': {'title': TAB, 'gridProperties': {'frozenRowCount': 1, 'columnCount': need + 2}}}}]}).execute(num_retries=3)
         sid = r['replies'][0]['addSheet']['properties']['sheetId']
         sv.batchUpdate(spreadsheetId=SHEET, body={'requests': [{'repeatCell': {'range': {'sheetId': sid, 'startRowIndex': 0, 'endRowIndex': 1},
             'cell': {'userEnteredFormat': {'textFormat': {'bold': True}, 'backgroundColor': {'red': .9, 'green': .9, 'blue': .9}}},
-            'fields': 'userEnteredFormat(textFormat,backgroundColor)'}}]}).execute()
+            'fields': 'userEnteredFormat(textFormat,backgroundColor)'}}]}).execute(num_retries=3)
         say('created tab', TAB)
     elif pl['gridProperties']['columnCount'] < need:
-        sv.batchUpdate(spreadsheetId=SHEET, body={'requests': [{'appendDimension': {'sheetId': pl['sheetId'], 'dimension': 'COLUMNS', 'length': need - pl['gridProperties']['columnCount']}}]}).execute()
-    sv.values().update(spreadsheetId=SHEET, range="'%s'!A1" % TAB, valueInputOption='RAW', body={'values': [AUTO_HDR + MAN_HDR + TRACK_HDR]}).execute()
+        sv.batchUpdate(spreadsheetId=SHEET, body={'requests': [{'appendDimension': {'sheetId': pl['sheetId'], 'dimension': 'COLUMNS', 'length': need - pl['gridProperties']['columnCount']}}]}).execute(num_retries=3)
+    sv.values().update(spreadsheetId=SHEET, range="'%s'!A1" % TAB, valueInputOption='RAW', body={'values': [AUTO_HDR + MAN_HDR + TRACK_HDR]}).execute(num_retries=3)
     return meta
 
 
@@ -499,7 +499,7 @@ def leads_now(st):
                         'company': l.get('companyName') or p.get('companyName') or '', 'sender': x.get('linkedInSenderFullName') or sender, 'copy': copy,
                         'campaign': cid, 'status': stt, 'connected': connected, 'first_seen': f.get('first_seen', ''), 'first_ts': f.get('first_ts'),
                         'msg_status': ms, 'msg_out': ms != 'None', 'replied': 'Yes' if 'repl' in ms.lower() else 'No',
-                        'camp_status': x.get('leadCampaignStatus') or '', 'active': (x.get('leadCampaignStatus') or '') not in INACTIVE,
+                        'err': x.get('errorCode') or x.get('leadCampaignStatusMessage') or '', 'camp_status': x.get('leadCampaignStatus') or '', 'active': (x.get('leadCampaignStatus') or '') not in INACTIVE,
                         'last_action': (x.get('lastActionTime') or '')[:19].replace('T', ' '), 'last_ts': iso_ts(x.get('lastActionTime')),
                         'companyname': cf.get('normalizedcompanyname') or '', 'hr_url': link, 'slug': slug,
                         'email': next((e for e in (p.get('emailAddress'), p.get('enrichedEmailAddress'), p.get('customEmailAddress'), l.get('emailAddress')) if e and '@' in e), ''),
@@ -523,8 +523,10 @@ def verdict(a, booked):
     return 'waiting for message 1, no deck set'
 
 
-def sync_log(sv, st, al, booked):
-    old = sv.values().get(spreadsheetId=SHEET, range="'%s'!%s2:%s" % (TAB, col(6), col(NA + NM))).execute().get('values', [])
+def sync_log(sv, st, al, booked, deck_sent=None):
+    """Auto + tracking block of the Presentation Log; deck_sent = lead ids whose deck message is in the HeyReach inbox (the open rate
+    counts a lead as messaged only once message 2 with the deck link went out; before that only message 1 is out)."""
+    old = sv.values().get(spreadsheetId=SHEET, range="'%s'!%s2:%s" % (TAB, col(6), col(NA + NM))).execute(num_retries=3).get('values', [])
     w = NA + NM - 5
     old = [[str(x) for x in r] + [''] * (w - len(r)) for r in old]
     manual = {r[0]: r[NA - 5:w] for r in old if r[0]}   # manual block typed by hand, moved with the lead
@@ -546,7 +548,8 @@ def sync_log(sv, st, al, booked):
         t = counted(st['slugs'].get(a['slug'])) if a['slug'] else None
         track.append([t['opens'], t['sessions'], ts(t['first']), ts(t['last']), t['max'], t['secs'], ', '.join(t['videos']), t['book'], booked.get(lid, ''), where(t['sids'])]
                      if t else ['', '', '', '', '', '', '', '', booked.get(lid, ''), ''])
-        if a['msg_out'] and a['slug']:
+        a['deck_out'] = (lid in deck_sent) if deck_sent is not None else (a['msg_out'] and bool(a['last_ts']) and a['last_ts'] + 4 * 86400 <= time.time())
+        if a['deck_out'] and a['slug']:
             c = per.setdefault(a['sender'], [0, 0]); c[0] += 1; c[1] += 1 if t and t['opens'] else 0
         if chk.startswith(BAD):
             kf = lid + '|' + chk[:24]
@@ -554,16 +557,16 @@ def sync_log(sv, st, al, booked):
     if rows:
         sv.values().batchUpdate(spreadsheetId=SHEET, body={'valueInputOption': 'RAW', 'data': [
             {'range': "'%s'!A2" % TAB, 'values': rows}, {'range': "'%s'!%s2" % (TAB, col(NA + 1)), 'values': [manual.get(l, [''] * NM) for l in order]},
-            {'range': "'%s'!%s2" % (TAB, TRACK_COL), 'values': track}]}).execute()
+            {'range': "'%s'!%s2" % (TAB, TRACK_COL), 'values': track}]}).execute(num_retries=3)
     if len(old) > len(rows):
-        sv.values().clear(spreadsheetId=SHEET, range="'%s'!A%d:%s%d" % (TAB, len(rows) + 2, col(NA + NM + len(TRACK_HDR)), len(old) + 1), body={}).execute()
+        sv.values().clear(spreadsheetId=SHEET, range="'%s'!A%d:%s%d" % (TAB, len(rows) + 2, col(NA + NM + len(TRACK_HDR)), len(old) + 1), body={}).execute(num_retries=3)
     st['open_rate_per'] = per
-    say('sheet synced:', len(rows), 'connected leads, open rate per sender (messaged with deck, opened):', per)
+    say('sheet synced:', len(rows), 'connected leads, open rate per sender (deck message out, opened):', per)
     return rows
 
 
 # ---------- Copy docs (Thomas 2026-10-19: the exact format of "Messages Craze & Friends", one doc per copy, built from the HeyReach sequences) ----------
-EXAMPLES = [('Julian, Huel', 'https://www.linkedin.com/company/huel/', SITE + 'huel/'), ('Lena, Allbirds', 'https://www.linkedin.com/company/allbirds/', SITE + 'allbirds/')]
+EXAMPLES = []   # (name + company, company page URL, deck URL) per example deck; empty until real decks exist (Thomas 2026-10-19: no presentations yet)
 
 
 def chain(seq):
@@ -610,7 +613,7 @@ def doc_body(label, msgs):
         for j, p in enumerate(paras):
             if j: out.append(('', 'normal'))
             out.append((p.replace('\n', ' '), 'normal'))
-    if any('{presentation}' in t for d, u, t in msgs):
+    if EXAMPLES and any('{presentation}' in t for d, u, t in msgs):
         out += [('', 'normal'), ('', 'normal'), ('Examples for Presentation', 'h2')]
         for k, (who, page, deck) in enumerate(EXAMPLES):
             if k: out.append(('', 'normal'))
@@ -623,7 +626,7 @@ def u16(s): return len(s.encode('utf-16-le')) // 2
 
 def write_doc(docs, doc_id, body):
     """Replaces the whole document body with the paragraphs; styles: NORMAL_TEXT everywhere except the HEADING_2 line, bold lines, links."""
-    d = docs.get(documentId=doc_id).execute()
+    d = docs.get(documentId=doc_id).execute(num_retries=3)
     end = d['body']['content'][-1]['endIndex']
     reqs = []
     if end > 2: reqs.append({'deleteContentRange': {'range': {'startIndex': 1, 'endIndex': end - 1}}})
@@ -641,7 +644,7 @@ def write_doc(docs, doc_id, body):
             url = k[5:]; s = pos + u16(t) - u16(url)
             reqs.append({'updateTextStyle': {'range': {'startIndex': s, 'endIndex': s + u16(url)}, 'textStyle': {'link': {'url': url}}, 'fields': 'link'}})
         pos += n + 1
-    docs.batchUpdate(documentId=doc_id, body={'requests': reqs}).execute()
+    docs.batchUpdate(documentId=doc_id, body={'requests': reqs}).execute(num_retries=3)
 
 
 def copy_docs(st):
@@ -655,7 +658,7 @@ def copy_docs(st):
             h = hashlib.sha1(json.dumps(body).encode()).hexdigest()
             e = reg.get(label) or {}
             if not e.get('id'):
-                e = {'id': docs.create(body={'title': 'Messages VistaMails ' + label}).execute()['documentId'], 'hash': ''}
+                e = {'id': docs.create(body={'title': 'Messages VistaMails ' + label}).execute(num_retries=3)['documentId'], 'hash': ''}
                 say('copy doc created:', label, e['id'])
             if e.get('hash') != h:
                 write_doc(docs, e['id'], body); e['hash'] = h; say('copy doc written:', label, len(body), 'paragraphs')
@@ -668,13 +671,13 @@ def copy_docs(st):
 
 def copy_links(sv, links):
     """Copy tab column B = the doc link of the row whose A contains the copy label (hr_perf never rewrites A or B)."""
-    rows = sv.values().get(spreadsheetId=SHEET, range='Copy!A2:B40').execute().get('values', [])
+    rows = sv.values().get(spreadsheetId=SHEET, range='Copy!A2:B40').execute(num_retries=3).get('values', [])
     data = []
     for i, r in enumerate(rows, start=2):
         a = (r[0] if r else '').strip(); b = r[1] if len(r) > 1 else ''
         hit = next((l for l, _c in COPIES if a and l.lower() in a.lower()), None)
         if hit and links.get(hit) and b != links[hit]: data.append({'range': 'Copy!B%d' % i, 'values': [[links[hit]]]})
-    if data: sv.values().batchUpdate(spreadsheetId=SHEET, body={'valueInputOption': 'RAW', 'data': data}).execute()
+    if data: sv.values().batchUpdate(spreadsheetId=SHEET, body={'valueInputOption': 'RAW', 'data': data}).execute(num_retries=3)
     return len(data)
 
 
@@ -1044,7 +1047,7 @@ def on_booked(ctx, lid, row, src):
         for cid in ([fact['campaign']] if fact.get('campaign') else CAMPAIGNS_ALL):
             try: hr('/campaign/StopLeadInCampaign', {'campaignId': cid, 'leadUrl': url}); notes.append('stopped in %s' % cid)
             except Exception as e:
-                if 'HTTP Error 4' not in repr(e): ok = False   # a 4xx = the lead is not in that campaign, fine
+                if not (isinstance(e, urllib.error.HTTPError) and 400 <= e.code < 500): ok = False   # a 4xx = the lead is not in that campaign, fine
                 notes.append('stop %s: %s' % (cid, repr(e)[:80]))
         a['stop'] = ok
     if not a.get('tag'):
@@ -1065,7 +1068,7 @@ def slack_meeting(ctx, row, key):
     if key.startswith('http'): done.append(key); return   # Calendly invitee URI: the booking-tracker's post
     tok = env('SLACK_USER_TOKEN')
     if not tok: say('slack meeting: SLACK_USER_TOKEN missing'); return
-    bits = [row[0], row[1], row[2], row[5] or 'no phone yet', 'meeting ' + row[6], row[11], row[12]]
+    bits = [row[0], row[1], row[2], row[5] or 'no phone yet', ('meeting ' + row[6]) if row[6] else '', row[11], row[12]]
     text = '📅 VistaMails: new meeting ' + ', '.join(b for b in bits if b) + '\nhttps://docs.google.com/spreadsheets/d/%s' % SHEET
     try:
         r = urllib.request.Request('https://slack.com/api/chat.postMessage', json.dumps({'channel': env('SLACK_BOOKING_CHANNEL') or SLACK_BOOKING_CHANNEL, 'text': text}).encode(),
@@ -1132,11 +1135,11 @@ def crashed(e):
 # ---------- Meetings tab ----------
 def ensure_meet_tab(sv, meta):
     if any(x['properties']['title'] == 'Meetings' for x in meta): return
-    res = sv.batchUpdate(spreadsheetId=SHEET, body={'requests': [{'addSheet': {'properties': {'title': 'Meetings', 'gridProperties': {'rowCount': 300, 'columnCount': 16, 'frozenRowCount': 1}}}}]}).execute()
+    res = sv.batchUpdate(spreadsheetId=SHEET, body={'requests': [{'addSheet': {'properties': {'title': 'Meetings', 'gridProperties': {'rowCount': 300, 'columnCount': 16, 'frozenRowCount': 1}}}}]}).execute(num_retries=3)
     sid = res['replies'][0]['addSheet']['properties']['sheetId']
-    sv.values().update(spreadsheetId=SHEET, range='Meetings!A1', valueInputOption='RAW', body={'values': [MEET_HDR]}).execute()
+    sv.values().update(spreadsheetId=SHEET, range='Meetings!A1', valueInputOption='RAW', body={'values': [MEET_HDR]}).execute(num_retries=3)
     sv.batchUpdate(spreadsheetId=SHEET, body={'requests': [{'repeatCell': {'range': {'sheetId': sid, 'startRowIndex': 0, 'endRowIndex': 1},
-                   'cell': {'userEnteredFormat': {'textFormat': {'bold': True}}}, 'fields': 'userEnteredFormat.textFormat.bold'}}]}).execute()
+                   'cell': {'userEnteredFormat': {'textFormat': {'bold': True}}}, 'fields': 'userEnteredFormat.textFormat.bold'}}]}).execute(num_retries=3)
     say('created tab Meetings')
 
 
@@ -1173,14 +1176,15 @@ def meet_row(ctx, res, inv, ev, start, key):
 
 
 def sync_meetings(sv, st, al, meta):
-    """Calendly bookings + HeyReach "meeting" tags + typed dates -> Meetings tab. Returns ({lid: date} of active meetings, new rows landed)."""
+    """Calendly bookings + HeyReach "meeting" tags + typed dates -> Meetings tab. Returns ({lid: date} of active meetings, new rows landed,
+    {lead ids whose deck message is in the inbox})."""
     ensure_meet_tab(sv, meta)
     ctx = Ctx(st, al)
     booked, new, updates, seen = {}, [], [], []
-    rows = sv.values().get(spreadsheetId=SHEET, range='Meetings!A2:N').execute().get('values', [])
-    hdr = sv.values().get(spreadsheetId=SHEET, range='Meetings!K1:N1').execute().get('values', [[]])[0]
+    rows = sv.values().get(spreadsheetId=SHEET, range='Meetings!A2:N').execute(num_retries=3).get('values', [])
+    hdr = sv.values().get(spreadsheetId=SHEET, range='Meetings!K1:N1').execute(num_retries=3).get('values', [[]])[0]
     hdr = hdr + [''] * (4 - len(hdr))
-    if hdr != MEET_HDR[10:]: sv.values().update(spreadsheetId=SHEET, range='Meetings!K1:N1', valueInputOption='RAW', body={'values': [MEET_HDR[10:]]}).execute()
+    if hdr != MEET_HDR[10:]: sv.values().update(spreadsheetId=SHEET, range='Meetings!K1:N1', valueInputOption='RAW', body={'values': [MEET_HDR[10:]]}).execute(num_retries=3)
     have = {}   # key -> (row number, row values)
     for i, r in enumerate(rows, start=2):
         r = [str(x) for x in r] + [''] * (14 - len(r))
@@ -1219,7 +1223,7 @@ def sync_meetings(sv, st, al, meta):
         say('booking', inv.get('name'), inv.get('email'), start, '->', row[0], '|', res['how'])
     # (b) HeyReach tag containing "meeting", (c) typed date in the Presentation Log
     cvs = ctx.convs()
-    pl = sv.values().get(spreadsheetId=SHEET, range="'%s'!%s2:%s" % (TAB, col(6), MEET_DATE_COL)).execute().get('values', [])
+    pl = sv.values().get(spreadsheetId=SHEET, range="'%s'!%s2:%s" % (TAB, col(6), MEET_DATE_COL)).execute(num_retries=3).get('values', [])
     w = NA + 4 - 5
     typed = {}
     for r in pl:
@@ -1256,8 +1260,8 @@ def sync_meetings(sv, st, al, meta):
             say('meeting:', name, date, '|', how)
         booked[lid] = r[6]; on_booked(ctx, lid, r, src); slack_meeting(ctx, r, lid)
         seen.append((lid, r, lid, True))
-    if updates: sv.values().batchUpdate(spreadsheetId=SHEET, body={'valueInputOption': 'RAW', 'data': updates}).execute()
-    if new: sv.values().append(spreadsheetId=SHEET, range='Meetings!A1', valueInputOption='RAW', insertDataOption='INSERT_ROWS', body={'values': new}).execute()
+    if updates: sv.values().batchUpdate(spreadsheetId=SHEET, body={'valueInputOption': 'RAW', 'data': updates}).execute(num_retries=3)
+    if new: sv.values().append(spreadsheetId=SHEET, range='Meetings!A1', valueInputOption='RAW', insertDataOption='INSERT_ROWS', body={'values': new}).execute(num_retries=3)
     # lead id -> HeyReach account of every Meetings lead, for the Performance tab meeting rate (jobs/vista_perf.py extra_meetings)
     acc = {}
     for k, (rn, r) in have.items():
@@ -1268,7 +1272,7 @@ def sync_meetings(sv, st, al, meta):
     save_json(MEET_ACC, acc)
     report(st, issues_of(ctx, seen))
     say('meetings:', len(have), 'rows,', len(new), 'new,', len(updates), 'cell updates,', len(booked), 'active lead meetings')
-    return booked, bool(new)
+    return booked, bool(new), {lid for lid, cv in cvs.items() if cv['deck_sent']}
 
 
 # ---------- main ----------
@@ -1283,18 +1287,18 @@ def run():
     import hr_perf
     from jobs.vista_perf import CFG
     hr_perf.ensure_tabs(CFG, sv)
-    failed, al, booked, new = None, {}, {}, False
+    failed, al, booked, new, deck_sent = None, {}, {}, False, None
     try:
         al = leads_now(st)
     except Exception as e:
         failed = e; say('HEYREACH LEADS FAILED:', repr(e))
     try:
-        if al or not failed: booked, new = sync_meetings(sv, st, al, meta)
+        if al or not failed: booked, new, deck_sent = sync_meetings(sv, st, al, meta)
     except Exception as e:
         failed = failed or e; say('MEETINGS SYNC FAILED:', repr(e))
     save_json(STATE, st)   # acted / slacked / phones are consumed
     try:
-        if al or not failed: sync_log(sv, st, al, booked)
+        if al or not failed: sync_log(sv, st, al, booked, deck_sent)
     except Exception as e:
         failed = failed or e; say('LOG SYNC FAILED:', repr(e))
     try:
