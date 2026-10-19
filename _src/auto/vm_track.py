@@ -584,8 +584,7 @@ def copy_messages(cids):
     that name becomes {senderFirstName}."""
     chains = {}
     for cid in cids:
-        seq = hr('/campaign/GetCampaignSequence', {'campaignId': cid})
-        if not seq.get('nodeType'): seq = hr('/campaign/GetCampaignSequence?campaignId=%d' % cid, method='GET')
+        seq = hr('/campaign/GetCampaignSequence?campaignId=%d' % cid, method='GET')   # GET with the id in the query, POST answers 405
         ch = chain(seq)
         fn = CAMPAIGNS[cid][1].split()[0]
         chains[cid] = [(d, u, re.sub(r"(It's |I'm |It is )%s\b" % re.escape(fn), lambda m: m.group(1) + '{senderFirstName}', t)) for d, u, t in ch]
