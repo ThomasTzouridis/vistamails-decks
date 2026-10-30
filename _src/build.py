@@ -9,7 +9,7 @@ Spec fields (JSON):
   logo          file in assets/leadlogos/ (white or light logo on transparent for the dark deck); omitted = company name in text
   logo_badge    true = logo on a white badge (for dark logos)
   guarantee     "A" = 100% refund plus $5,000 transfer (message 1A), "B" = 100% refund only (message 1B). Default "B".
-  cover_line    optional, default "20% more revenue in 60 days for <company>, from the customers you already have."
+  cover_line    optional, default "More revenue for <company>, from the customers you already have."
   saw_head      headline of slide 2, max ~8 words
   saw_l1, saw_l2  two plain lines about what we saw on the lead's site (facts only, no numbers we did not see)
   saw_turn      the highlighted line: what the segment reactivation system changes for them (22 to 32 words, no bold)
@@ -20,7 +20,7 @@ Spec fields (JSON):
 """
 import json, sys, os, html
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
-BOOK = 'https://calendly.com/umeshpdy95/email-strategy-consutling'
+BOOK = 'https://calendly.com/umesh-gps/vistamails-email-marketing-discovery-call'
 LOGOS = ''.join(f'<img src="../assets/clients/{n}" alt="">' for n in
                 ["walkeepaws.png", "keebos.png", "lunarchi.png", "viebys.png", "pukingball.png", "allure.png", "celsius.png", "bamboobaby.png", "marbella.png", "martonfraser.png"])
 G = {
@@ -46,11 +46,11 @@ for path in sys.argv[1:]:
     lines = f"<p>{e(sp['saw_l1'])}</p><p>{e(sp['saw_l2'])}</p><p class=\"turn\">{e(sp['saw_turn'])}</p>"
     out = open(os.path.join(HERE, 'template.html'), encoding='utf-8').read()
     for k, v in {'COMPANY': co, 'PREPARED': prep, 'CO_MARK': mark, 'DOMAIN': e(sp['domain']), 'SHOT': sp['shot'],
-                 'COVER_LINE': e(sp.get('cover_line') or f"20% more revenue in 60 days for {sp['company']}, from the customers you already have."),
+                 'COVER_LINE': e(sp.get('cover_line') or f"More revenue for {sp['company']}, from the customers you already have."),
                  'SAW_HEAD': e(sp['saw_head']), 'SAW_LINES': lines, 'AUDIT_TAIL': e(sp.get('audit_tail', '')),
                  'PROOF_HEAD': e(sp.get('proof_head') or f"{sp['company']} would not be the first."),
                  'G_HEAD': gh, 'G_BODY': gb.format(co=co), 'LOGOS': LOGOS,
-                 'TALK_TEXT': e(sp.get('talk_text') or f"Thirty minutes with Umesh: he walks you through the audit for {sp['company']}, the dormant segments we would start with and what the first 60 days look like."),
+                 'TALK_TEXT': e(sp.get('talk_text') or f"Thirty minutes with Umesh, Co-Founder and CEO: the audit for {sp['company']}, the dormant segments we would start with and what the first 60 days look like."),
                  'BOOKING_URL': sp.get('booking_url') or BOOK}.items():
         out = out.replace('{{' + k + '}}', v)
     assert '{{' not in out, path

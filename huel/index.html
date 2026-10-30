@@ -9,7 +9,7 @@
 <script>/* phones: one slide per screen instead of a shrunken 1280x720 stage */if(matchMedia("(max-width:700px)").matches){document.documentElement.classList.add("sphone");document.getElementById("rv").disabled=true}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@700&family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
 /* Slideshow: fixed 1280x720 stage scaled to the window, near-black slides like thevistamails.com, green #1dd27f as the one accent */
 :root{
@@ -34,12 +34,12 @@ p{margin:0}
 .mark{color:var(--hi)}
 .x{font:300 .7em var(--body);color:var(--muted)}
 .co{font-family:var(--display);font-weight:700;line-height:1.05;letter-spacing:-.01em}
-.dsp{height:1em;width:auto;display:block}
+.dsp{--h:1em;display:block;font:700 calc(var(--h)*.5)/1 'Libre Caslon Text',Georgia,serif;letter-spacing:.05em;color:#fff;white-space:nowrap;text-transform:uppercase}.dsp i{display:block;font-style:normal}
 
 /* cover: text left, the lead's site on the right */
 .cover{padding-right:46cqw}
 .cover .pair{display:flex;align-items:center;flex-wrap:nowrap;gap:2cqw;margin-top:2.4cqw;min-width:0}
-.cover .dsp{height:6.4cqw}
+.cover .dsp{--h:6.4cqw}
 .cover .x{font-size:3cqw}
 .cover .co{font-size:4cqw}
 .cover .sub{margin-top:3cqw;font-size:2cqw;max-width:32ch;line-height:1.4;color:#e4ece9}
@@ -65,7 +65,19 @@ p{margin:0}
 .st{display:flex;flex-direction:column;gap:.5cqw}
 .st b{font:800 2.8cqw/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--hi);letter-spacing:-.02em}
 .st span{font:500 1cqw/1.35 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.proof{display:grid;grid-template-columns:1fr 36cqw;gap:2.6cqw;margin-top:1.2cqw;align-items:start}
+.proof{display:grid;grid-template-columns:1fr 1fr;gap:1.6cqw;margin-top:1.2cqw;align-items:stretch}
+.vid{display:flex;flex-direction:column;gap:.4cqw;background:var(--tile);padding:0 0 1.1cqw;border-top:.25cqw solid var(--hi);color:inherit;text-decoration:none;transition:background .2s}
+.vid:hover,.vid:focus-visible{background:#10292a;outline:none}
+.vid .th{display:block;aspect-ratio:16/5.4;background:#000 center/cover no-repeat;position:relative;margin-bottom:.6cqw}
+.vid .pl{position:absolute;left:50%;top:50%;width:4.4cqw;height:4.4cqw;margin:-2.2cqw 0 0 -2.2cqw;border-radius:50%;background:var(--hi);box-shadow:0 .6cqw 1.6cqw rgba(0,0,0,.5)}
+.vid .pl:after{content:"";position:absolute;left:1.7cqw;top:1.25cqw;border-left:1.4cqw solid #041010;border-top:.95cqw solid transparent;border-bottom:.95cqw solid transparent}
+.vid .yr,.vid b,.vid p{padding:0 1.4cqw}
+.vid .yr{font:600 .9cqw var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.vid b{font:800 2.2cqw/1 var(--mono);color:#fff;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.vid p{font-size:1.02cqw;line-height:1.38;color:#cdd8d4}
+.proofs{padding-top:3.4cqw;padding-bottom:6.4cqw}.proofs .stats{margin-top:1cqw;padding-top:.9cqw}.proofs .marquee{margin-top:1cqw}
+.offer .gl{font-size:1.4cqw;max-width:none;padding-top:.2cqw;gap:1.2cqw}.side{display:flex;flex-direction:column;gap:1.6cqw}.side .case{flex:1}
+.gl{display:flex;flex-direction:column;gap:.8cqw;font-size:1.3cqw;line-height:1.45;color:#e4ece9;border-left:.4cqw solid var(--hi);padding-left:1.4cqw;max-width:52cqw}
 .cases{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4cqw}
 .case{display:flex;flex-direction:column;gap:.5cqw;background:var(--tile);padding:1.3cqw 1.4cqw 1.4cqw;border-top:.25cqw solid var(--hi)}
 .case .yr{font:600 .9cqw var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
@@ -94,22 +106,24 @@ p{margin:0}
 .nx svg{width:1.15cqw;height:1.15cqw;color:var(--hi);flex:none}
 .nx:hover,.nx:focus-visible{border-color:var(--hi);background:var(--tile);outline:none}
 
-/* talk */
-.talk{display:grid;grid-template-columns:1fr 38cqw;padding:0;align-items:stretch}
-.talk .l{padding:5.5cqw 6cqw;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;gap:2.4cqw}
-.talk h2{font-size:4.6cqw}
-.btn{display:inline-flex;align-items:center;gap:1cqw;background:var(--hi);color:#041010;text-decoration:none;font:700 1.5cqw var(--mono);padding:1.3cqw 2.4cqw;border-radius:999px}
+/* talk, same layout as the 3DforScience closing page */
+.talk{display:grid;grid-template-columns:auto 54cqw;column-gap:7cqw;justify-content:center;align-content:center;align-items:stretch;padding:0 4cqw 3cqw}
+.talk .l{display:flex;flex-direction:column;justify-content:space-between;padding:0;align-items:flex-start;text-align:left;min-width:24cqw}
+.talk .top{display:flex;flex-direction:column;align-items:flex-start}
+.talk h2{font-size:3cqw;margin:0;line-height:1.1}
+.talk .ul{display:block;width:6cqw;height:.25cqw;border-radius:.2cqw;background:var(--hi);margin:1.1cqw 0 3.4cqw}
+.btn{display:inline-flex;align-items:center;gap:1cqw;background:var(--hi);color:#041010;text-decoration:none;font:700 1.6cqw var(--mono);padding:1.2cqw 3cqw;border-radius:1.6cqw}
 .btn:hover,.btn:focus-visible{background:#fff;outline:.2cqw solid var(--hi)}
-.talk .pair{display:flex;align-items:center;justify-content:flex-start;gap:1.6cqw}
-.talk .dsp{height:5.6cqw}
-.talk .x{font-size:2.4cqw}
-.talk .co{font-size:2.6cqw}
+.talk .bot{display:flex;flex-direction:column;gap:2cqw}
+.talk .pair{display:flex;align-items:center;justify-content:flex-start;gap:2cqw}
+.talk .dsp{--h:3.4cqw}
+.talk .x{display:block;width:.15cqw;height:3.9cqw;background:rgba(255,255,255,.45)}
+.talk .co{font-size:2cqw}
+.talk .ll{height:3.2cqw;max-width:14cqw}.talk .llb .ll{height:2.6cqw}
 .contact{font:500 1.15cqw/1.6 var(--mono);color:var(--muted)}
-.contact.lead{color:#e4ece9;font-size:1.5cqw;line-height:1.5}
-.talk .r{position:relative;background:#222 url(../assets/img/umesh.jpg) 50% 20%/cover no-repeat;margin:0}
-.talk .r figcaption{position:absolute;left:2.4cqw;bottom:2.4cqw;display:flex;flex-direction:column;gap:.3cqw;background:var(--paper);padding:1cqw 1.4cqw;border-left:.3cqw solid var(--hi)}
-.talk .r b{font:700 1.8cqw/1 var(--display)}
-.talk .r span{font:500 1cqw var(--mono);color:var(--muted)}
+.contact b{color:#e4ece9;font-weight:700}
+.talk .r{margin:0;aspect-ratio:721/431;border-radius:1.9cqw;overflow:hidden;box-shadow:0 1.6cqw 1.7cqw rgba(0,0,0,.85)}
+.talk .r img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 80%}
 </style>
 <style>/* keep the arrow buttons in scroll view */.reveal-scroll .reveal .controls{display:block!important;position:fixed}</style>
 <style>
@@ -143,7 +157,7 @@ html.sphone .llb{padding:7px 10px;border-radius:4px}
 html.sphone .cover{padding-right:18px;padding-top:22px;justify-content:center}
 html.sphone .cover .pair{flex-wrap:nowrap;gap:12px;margin-top:14px}
 html.sphone .cover .pair>*{min-width:0}
-html.sphone .cover .dsp{height:40px;flex:none}
+html.sphone .cover .dsp{--h:40px;flex:none}
 html.sphone .cover .x{font-size:20px;flex:none}
 html.sphone .cover .co{font-size:22px;flex:1 1 auto;overflow-wrap:anywhere}
 html.sphone .cover .ll{height:40px;width:auto;max-width:180px;object-fit:contain;object-position:left center}
@@ -172,6 +186,25 @@ html.sphone .st b{font-size:24px}
 html.sphone .st span{font-size:9px}
 html.sphone .proof{grid-template-columns:1fr;gap:12px;margin-top:12px}
 html.sphone .cases{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+html.sphone .proof{grid-template-columns:1fr 1fr}html.sphone .offer .gl{font-size:14px}html.sphone .side{grid-column:1/-1;flex-direction:row;gap:8px}
+html.sphone .vid{padding-bottom:10px;gap:3px;border-top-width:2px}html.sphone .vid .yr,html.sphone .vid b,html.sphone .vid p{padding:0 8px}
+html.sphone .vid .yr{font-size:8px;letter-spacing:.06em;line-height:1.3}html.sphone .vid b{font-size:15px}html.sphone .vid p{font-size:10px;line-height:1.3}
+html.sphone .vid .pl{width:28px;height:28px;margin:-14px 0 0 -14px}html.sphone .vid .pl:after{left:11px;top:8px;border-left-width:9px;border-top-width:6px;border-bottom-width:6px}
+html.sphone .s.proofs{justify-content:center}html.sphone .s.proofs:not(.cover):not(.talk)>:first-child{margin-top:0}html.sphone .s.proofs:not(.cover):not(.talk)>:last-child{margin-bottom:0}html.sphone .contact.lead{max-width:none}
+html.sphone .talk{display:flex;flex-direction:column;justify-content:center;align-items:stretch;padding:22px 18px;gap:22px}html.sphone .talk .top,html.sphone .talk .bot{align-self:flex-start}
+html.sphone .talk .l{display:contents}
+html.sphone .talk .top{order:1}html.sphone .talk .r{order:2}html.sphone .talk .bot{order:3}
+html.sphone .talk h2{font-size:30px}
+html.sphone .talk .ul{width:44px;height:3px;margin:10px 0 20px}
+html.sphone .talk .btn{font-size:17px;padding:13px 30px;border-radius:16px}
+html.sphone .talk .r{flex:none;width:100%;aspect-ratio:4/3;border-radius:16px;box-shadow:0 12px 18px rgba(0,0,0,.8)}
+html.sphone .talk .bot{gap:14px}
+html.sphone .talk .pair{gap:14px;flex-wrap:nowrap}html.sphone .talk .pair>*{min-width:0}
+html.sphone .talk .dsp{--h:30px;flex:none}html.sphone .talk .x{width:1px;height:32px;flex:none}
+html.sphone .talk .co{font-size:18px;overflow-wrap:anywhere}
+html.sphone .talk .ll{height:28px;width:auto;max-width:150px;object-fit:contain}html.sphone .talk .llb{flex:none}html.sphone .talk .llb .ll{height:22px;max-width:130px}
+html.sphone .talk .contact{font-size:13px}
+html.sphone .gl{font-size:13.5px;gap:8px;border-left-width:3px;padding-left:12px;max-width:none;text-align:left}
 html.sphone .case{padding:10px 10px 12px;gap:3px;border-top-width:2px}
 html.sphone .case .yr{font-size:8px;letter-spacing:.06em;line-height:1.3}
 html.sphone .case b{font-size:17px}
@@ -185,24 +218,9 @@ html.sphone .marquee .lab{font-size:8px;margin-bottom:8px}
 html.sphone .track{gap:28px}
 html.sphone .track img{height:18px;max-width:80px}
 /* talk */
-html.sphone .talk{display:flex;padding:22px 18px;justify-content:center}
-html.sphone .talk .l{padding:0;gap:18px;align-items:center;text-align:center}
-html.sphone .talk h2{font-size:30px}
 html.sphone .btn{font-size:16px;padding:13px 22px;gap:8px}
-html.sphone .talk .pair{flex-wrap:nowrap;gap:12px;justify-content:center}
-html.sphone .talk .pair>*{min-width:0}
-html.sphone .talk .dsp{height:36px;flex:none}
-html.sphone .talk .x{font-size:18px;flex:none}
-html.sphone .talk .co{font-size:20px;flex:0 1 auto;overflow-wrap:anywhere}
-html.sphone .talk .ll{height:36px;width:auto;max-width:180px;object-fit:contain}
-html.sphone .talk .llb{flex:none}
-html.sphone .talk .llb .ll{height:28px;max-width:160px}
 html.sphone .contact{font-size:12px}
 html.sphone .contact.lead{font-size:14px}
-html.sphone .talk .r{flex:1 1 auto;min-height:160px;margin-top:18px;background-position:50% 15%}
-html.sphone .talk .r figcaption{left:12px;bottom:12px;padding:8px 10px;border-left-width:2px}
-html.sphone .talk .r b{font-size:15px}
-html.sphone .talk .r span{font-size:10px}
 </style>
 </head>
 <body>
@@ -210,18 +228,21 @@ html.sphone .talk .r span{font-size:10px}
 
 <section aria-label="Cover"><div class="s cover">
   <div class="eyebrow in">Email and SMS retention plan</div>
-  <div class="pair in"><img class="dsp" src="../assets/logos/vm_wordmark.png" alt="VistaMails"><span class="x">×</span><img class="ll" src="../assets/leadlogos/huel.png" alt="Huel"></div>
-  <p class="sub in">20% more revenue in 60 days for Huel, from the customers you already have.</p>
+  <div class="pair in"><span class="dsp" role="img" aria-label="VistaMails"><i>Vista</i><i>Mails</i></span><span class="x">×</span><img class="ll" src="../assets/leadlogos/huel.png" alt="Huel"></div>
+  <p class="sub in">More revenue for Huel, from the customers you already have.</p>
   <p class="prep in">Prepared for Julian · Huel</p>
   <figure class="site"><img src="../assets/shots/huel.jpg" alt=""><figcaption>huel.com</figcaption></figure>
-  <button class="nx" type="button">What we saw at Huel<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
+  <button class="nx" type="button">The offer for Huel<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
 </div></section>
 
-<section aria-label="What we saw"><div class="s">
-  <div class="eyebrow in">What we saw at Huel</div>
-  <h2 class="in">A subscription brand lives or dies on the second order.</h2>
+<section aria-label="The offer"><div class="s offer">
+  <div class="eyebrow in">The offer for Huel</div>
+  <h2 class="in">20% more revenue in 60 days, or you pay nothing and we send you $5,000.</h2>
   <div class="saw in">
-    <div class="lines"><p>Huel sells powdered meals, hot meals, drinks and bundles, and the whole site pushes the subscribe-and-save option. That is a customer base that is meant to come back every month.</p><p>Every subscriber who pauses, every one-time buyer who tried a bundle once and every cart that was left behind still sits in Klaviyo. Those lists are already paid for.</p><p class="turn">The segment reactivation system goes after exactly those people first: paused subscribers, one-time buyers and abandoned carts, with flows and campaigns built around the next order, not the first one.</p></div>
+    <div class="gl">
+      <p>We agree the baseline with you up front. If Huel is not up 20% in revenue after 60 days, we refund everything you paid us, 100% of it and not a portion, and personally transfer $5,000 to your bank account to say sorry.</p>
+      <p>If your email lands in spam today, we get it into the inbox within 30 days, or we keep working for free until it does.</p>
+    </div>
     <div class="flow">
       <span class="lab0">The segment reactivation system, first 60 days</span>
       <div class="fs"><span class="n">01</span><div><span class="lab">Days 1 to 3 · Audit</span><h3>Find the dormant revenue</h3><p>Full Klaviyo audit and a map of every segment that stopped buying: lapsed customers, abandoned carts, one-time buyers, unengaged subscribers. For Huel that starts with paused and cancelled subscribers.</p></div></div>
@@ -229,11 +250,11 @@ html.sphone .talk .r span{font-size:10px}
       <div class="fs"><span class="n">03</span><div><span class="lab">Day 14 onward · Scale</span><h3>Campaigns, tests, reports</h3><p>Three to four campaigns a week to the right segments, weekly A/B tests, SMS where it earns its place, and a report in your inbox every week.</p></div></div>
     </div>
   </div>
-  <button class="nx" type="button">The proof and the guarantee<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
+  <button class="nx" type="button">The proof<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
 </div></section>
 
-<section aria-label="Proof and guarantee"><div class="s">
-  <div class="eyebrow in">The proof and the guarantee</div>
+<section aria-label="Proof"><div class="s proofs">
+  <div class="eyebrow in">The proof</div>
   <h2 class="in">Huel would not be the first.</h2>
   <div class="stats in">
     <div class="st"><b>120+</b><span>eCommerce brands served</span></div>
@@ -242,31 +263,34 @@ html.sphone .talk .r span{font-size:10px}
     <div class="st"><b>31%</b><span>of revenue from email, client average</span></div>
   </div>
   <div class="proof in">
-    <div class="cases">
-      <div class="case"><span class="yr">Fashion brand · 90 days</span><b>£2.5K → £258K</b><p>Monthly email revenue in the first 90 days. Email became 34% of the store's revenue, £177K of it from flows.</p></div>
-      <div class="case"><span class="yr">Apparel brand · 12 months</span><b>+261% YoY</b><p>€515,740 attributed to email in one year, 55% open rates, 40,000+ dormant profiles re-engaged.</p></div>
-      <div class="case"><span class="yr">Skincare brand · 2 months</span><b>$0 → $50K</b><p>From no email program to $25K a month in email revenue, 27% of the store's total.</p></div>
-    </div>
-    <div class="gbox">
-      <span class="lab">The guarantee for Huel</span>
-      <h3>20% more revenue in 60 days, or you pay nothing and we send you $5,000.</h3>
-      <p>We agree the baseline with you up front. If Huel is not up 20% in revenue after 60 days, we refund everything you paid us, 100% of it and not a portion, and personally transfer $5,000 to your bank account to say sorry.</p>
-      <p>If your email is in spam today, we get it into the inbox within 30 days or we work for free until it is.</p>
-    </div>
+    <a class="vid" href="https://canva.link/88wncqatq7cydeb" target="_blank" rel="noopener">
+      <span class="th" style="background-image:url(../assets/img/case_saint.jpg)"></span>
+      <span class="yr">SAINT Eyewear · 10 months</span>
+      <b>$2.37M attributed</b>
+      <p>A 200,000 person list split by intent: 15 automated flows made $1.95M, campaigns $423.8K. See the full case study.</p></a>
+    <a class="vid" href="https://canva.link/nx8uvmqqn60bmhg" target="_blank" rel="noopener">
+      <span class="th" style="background-image:url(../assets/img/case_walkeepaws.jpg);background-position:0 35%"></span>
+      <span class="yr">WalkeePaws, seen on Shark Tank · one winter</span>
+      <b>$156K → $265.5K</b>
+      <p>Up 70.2% on the previous winter, with email and SMS at 32% of the store's revenue. See the full case study.</p></a>
   </div>
   <div class="marquee in" aria-label="Clients"><span class="lab">Trusted by</span><div class="tw"><div class="track"><img src="../assets/clients/walkeepaws.png" alt=""><img src="../assets/clients/keebos.png" alt=""><img src="../assets/clients/lunarchi.png" alt=""><img src="../assets/clients/viebys.png" alt=""><img src="../assets/clients/pukingball.png" alt=""><img src="../assets/clients/allure.png" alt=""><img src="../assets/clients/celsius.png" alt=""><img src="../assets/clients/bamboobaby.png" alt=""><img src="../assets/clients/marbella.png" alt=""><img src="../assets/clients/martonfraser.png" alt=""><img src="../assets/clients/walkeepaws.png" alt=""><img src="../assets/clients/keebos.png" alt=""><img src="../assets/clients/lunarchi.png" alt=""><img src="../assets/clients/viebys.png" alt=""><img src="../assets/clients/pukingball.png" alt=""><img src="../assets/clients/allure.png" alt=""><img src="../assets/clients/celsius.png" alt=""><img src="../assets/clients/bamboobaby.png" alt=""><img src="../assets/clients/marbella.png" alt=""><img src="../assets/clients/martonfraser.png" alt=""></div></div></div>
-  <button class="nx" type="button">Let's talk<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
+  <button class="nx" type="button">Virtual Coffee?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
 </div></section>
 
-<section aria-label="Let's talk"><div class="s talk">
+<section aria-label="Virtual Coffee"><div class="s talk">
   <div class="l">
-    <h2 class="in">Let's talk about <span class="mark">Huel</span></h2>
-    <p class="contact lead in">Thirty minutes with Umesh: he walks you through the audit for Huel, the dormant segments we would start with and what the first 60 days look like.</p>
-    <a class="btn in" href="https://calendly.com/umeshpdy95/email-strategy-consutling" target="_blank" rel="noopener">Book a call with Umesh →</a>
-    <div class="pair in"><img class="dsp" src="../assets/logos/vm_wordmark.png" alt="VistaMails"><span class="x">×</span><img class="ll" src="../assets/leadlogos/huel.png" alt="Huel"></div>
-    <p class="contact in">Or just reply to Umesh's message on LinkedIn.<br>thevistamails.com</p>
+    <div class="top">
+      <h2 class="in">Virtual Coffee?</h2>
+      <span class="ul in" aria-hidden="true"></span>
+      <a class="btn in" href="https://calendly.com/umesh-gps/vistamails-email-marketing-discovery-call" target="_blank" rel="noopener">Book a call</a>
+    </div>
+    <div class="bot">
+      <div class="pair in"><span class="dsp" role="img" aria-label="VistaMails"><i>Vista</i><i>Mails</i></span><span class="x" aria-hidden="true"></span><img class="ll" src="../assets/leadlogos/huel.png" alt="Huel"></div>
+      <p class="contact in"><b>thevistamails</b>.com<br>Or just reply to the message on LinkedIn.</p>
+    </div>
   </div>
-  <figure class="r"><figcaption><b>Umesh Pandey</b><span>Co-Founder &amp; CEO, VistaMails</span></figcaption></figure>
+  <figure class="r in"><img src="../assets/img/team.jpg" alt="The VistaMails team"></figure>
 </div></section>
 
 </section></div></div>
@@ -345,7 +369,7 @@ return (secs.indexOf(Reveal.getCurrentSlide())+1)||1}catch(e){return 1}};
 let max=0,act=0,last=Date.now();
 send('open',{ref:document.referrer||'',ua:navigator.userAgent,w:innerWidth,tz:(Intl.DateTimeFormat().resolvedOptions().timeZone||''),lang:navigator.language||'',total:tot,phone});
 setInterval(()=>{const n=Date.now();if(document.visibilityState==='visible')act+=n-last;last=n;const i=idx();if(i>max){max=i;if(i>1)send('slide',{max,total:tot})}},1000);
-document.addEventListener('click',e=>{if(e.target.closest('a[href*="calendly"]'))send('book',{max})},true);
+document.addEventListener('click',e=>{if(e.target.closest('a[href*="calendly"]'))send('book',{max});const v=e.target.closest('a[data-v]');if(v)send('video',{v:v.dataset.v,max})},true);
 let gone=0;const bye=()=>{if(gone)return;gone=1;send('leave',{secs:Math.round(act/1000),max})};document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')bye();else gone=0});addEventListener('pagehide',bye);
 setInterval(()=>{if(document.visibilityState==='visible')send('ping',{secs:Math.round(act/1000),max})},30000);
 })();
