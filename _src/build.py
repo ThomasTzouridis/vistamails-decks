@@ -14,9 +14,8 @@ Spec fields (JSON):
   logo_badge    true = logo on a white badge (for dark logos)
   guarantee     "A" = 100% refund plus $5,000 transfer (message 1A), "B" = 100% refund only (message 1B). Default "B".
   cover_line    optional, default "More revenue for <company>, from the customers you already have."
-  saw           slide 2, the ONE line of what we saw at the lead (max ~18 words, plain, specific, human; falls back to saw_head).
-                Slide 2 = this line + three fixed step words (Audit, Flows, Campaigns) + the offer in one line (guarantee A or B).
-  saw_head, saw_l1, saw_l2, saw_turn  old slide 2 fields, no longer shown (saw_head only as fallback for saw)
+  (slide 2 is fixed since 2026-10-31: heading "How we work" + the offer line from guarantee A or B, nothing lead specific;
+   saw, saw_head, saw_l1, saw_l2, saw_turn, audit_tail are ignored)
   audit_tail    optional sentence appended to step 01 (something specific to their store), default ""
   proof_head    optional, default "More of our work."
   talk_text     optional, default sentence under the Let's talk headline
@@ -58,7 +57,7 @@ for path in sys.argv[1:]:
                  'COVER_LINE': e(sp.get('cover_line') or f"More revenue for {sp['company']}, from the customers you already have."),
                  'AUDIT_TAIL': e(sp.get('audit_tail', '')),
                  'PROOF_HEAD': e(sp.get('proof_head') or "More of our work."),
-                 'G_HEAD': gh, 'SAW': e(sp.get('saw') or sp['saw_head']), 'LOGOS': LOGOS,
+                 'G_HEAD': gh, 'LOGOS': LOGOS,
                  'TALK_TEXT': e(sp.get('talk_text') or f"Thirty minutes with Umesh, Co-Founder and CEO: the audit for {sp['company']}, the dormant segments we would start with and what the first 60 days look like."),
                  'BOOKING_URL': sp.get('booking_url') or BOOK}.items():
         out = out.replace('{{' + k + '}}', v)
