@@ -27,10 +27,10 @@ BG = '#041010'   # the deck --paper, the logo tool checks against it
 BOOK = 'https://calendly.com/umesh-gps/vistamails-email-marketing-discovery-call'
 LOGOS = ''.join(f'<img src="../assets/clients/{n}" alt="">' for n in
                 ["walkeepaws.png", "keebos.png", "lunarchi.png", "viebys.png", "pukingball.png", "allure.png", "celsius.png", "bamboobaby.png", "marbella.png", "martonfraser.png"])
-G = {'A': ("Within 60 days we increase {co}'s revenue by 20% with our segment reactivation system. If we do not, we refund 100% of what you paid us and transfer an additional $5,000 to your bank account.",
-           "100% refund of every fee paid to VistaMails, plus $5,000 transferred to {co}'s bank account."),
-     'B': ("Within 60 days we increase {co}'s revenue by 20% with our segment reactivation system. If we do not, we refund 100% of what you paid us.",
-           "100% refund of every fee paid to VistaMails.")}
+G = {'A': ("Within 60 days of starting, we raise {co}'s revenue by 20% with our segment reactivation system. If we miss that, you get back every dollar you paid us, and we send you $5,000 on top.",
+           "We pay back every fee {co} paid us, in full. On top of that, we send $5,000 from our account to {co}'s account."),
+     'B': ("Within 60 days of starting, we raise {co}'s revenue by 20% with our segment reactivation system. If we miss that, you get back every dollar you paid us.",
+           "We pay back every fee {co} paid us, in full.")}
 for path in sys.argv[1:]:
     sp = json.load(open(path, encoding='utf-8'))
     e = html.escape

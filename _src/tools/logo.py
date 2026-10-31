@@ -182,7 +182,7 @@ def trim(im):
 
 def analyse(im):
     """opaque pixels: coverage, luminance stats, number of distinct significant colours"""
-    im = im.convert('RGBA'); px = list(im.getdata()); n = len(px)
+    im = im.convert('RGBA'); px = list(im.get_flattened_data()) if hasattr(im, 'get_flattened_data') else list(im.getdata()); n = len(px)
     op = [p for p in px if p[3] > 128]
     if not op: return None
     lum = [(0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]) / 255 for p in op]
@@ -277,12 +277,15 @@ def guard(path, bg, badge=False):
     """build-time check of a logo file -> None when fine, else what is wrong (the build must refuse it). Same rules for every deck."""
     bg = hexrgb(bg) if isinstance(bg, str) else tuple(bg)
     light = (0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]) / 255 > 0.5
-    if not os.path.exists(path): return 'missing'
-    if not path.lower().endswith('.png'): return 'not a png from logo.py'
-    im = Image.open(path).convert('RGBA'); st = analyse(im)
+    if isinstance(path, Image.Image): im = path
+    else:
+        if not os.path.exists(path): return 'missing'
+        if not path.lower().endswith('.png'): return 'not a png from logo.py'
+        im = Image.open(path).convert('RGBA')
+    st = analyse(im)
     if st is None: return 'empty'
     if im.height < 90: return f'too small ({im.width}x{im.height}), pixel mush at deck size'
-    if im.width / im.height < 1.3: return 'an icon, not a wordmark'
+    if im.width / im.height < 1.15: return 'an icon, not a wordmark'
     if light and st['lum_mean'] > 0.75: return 'light on a white slide'
     if not light and st['lum_mean'] < 0.45 and not badge: return 'dark on a dark slide and no badge'
     return None
@@ -294,7 +297,7 @@ def hexrgb(s):
     return (int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16))
 
 
-def run(slug, company, url, bg, out_dir, name=None, preview_dir=None, keep=False, on_none='remove', local=None):
+def run(slug, company, url, bg, out_dir, name=None, preview_dir=None, keep=False, on_none='remove'):
     """-> {'file': name or None, 'badge': bool, 'ok': bool, 'text': bool}; writes <out_dir>/<name> and the preview"""
     bg = hexrgb(bg) if isinstance(bg, str) else tuple(bg)
     light = (0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]) / 255 > 0.5
@@ -303,22 +306,30 @@ def run(slug, company, url, bg, out_dir, name=None, preview_dir=None, keep=False
     os.makedirs(out_dir, exist_ok=True)
     if url and not url.startswith('http'): url = 'https://' + url
     stem = os.path.splitext(name)[0]
-    locals_ = local if local is not None else [os.path.join(out_dir, f) for f in (name, stem + '.svg', stem + '.png', slug + '.png', slug + '.svg')
+    locals_ = [os.path.join(out_dir, f) for f in (name, stem + '.svg', stem + '.png', slug + '.png', slug + '.svg')
                                                 if os.path.exists(os.path.join(out_dir, f))]
     locals_ = list(dict.fromkeys(locals_))
     cands = fetch_candidates('' if keep else url, company, locals_)
-    best = None
+    scored = []
     for kind, im, src, alt, prio in cands:
         im = strip_box(im); im = trim(im)
         if im is None: print(f'  empty  {kind:5} {src[:90]}'); continue
         s, st = score(kind, im, alt, company)
         if s > -99: s += prio
         print(f'  {s:6.2f}  {kind:5} {im.width}x{im.height}  {src[:90]}')
-        if best is None or s > best[0]: best = (s, im, st, src)
+        scored.append((s, im, st, src))
     for f in locals_:
         if os.path.exists(f): os.remove(f)
     res = {'file': None, 'badge': False, 'ok': False, 'text': False}
-    if best is None or best[0] < 3:
+    best = None
+    for s, im, st, src in sorted(scored, key=lambda x: -x[0]):   # best first; the first one the build guard accepts ships
+        if s < 3: break
+        im, badge = (fix_for_light if light else fix_for_dark)(im.copy(), st)
+        if im.height > H: im = im.resize((max(1, round(im.width * H / im.height)), H), Image.LANCZOS)
+        bad = guard(im, bg, badge)
+        if bad: print(f'  rejected ({bad}): {src[:70]}'); continue
+        best = (im, badge, st, src); break
+    if best is None:
         if on_none == 'text':
             im = wordmark(company, INK if light else (255, 255, 255)); im.save(os.path.join(out_dir, name))
             res.update(file=name, text=True)
@@ -328,13 +339,11 @@ def run(slug, company, url, bg, out_dir, name=None, preview_dir=None, keep=False
             print('RESULT no usable logo, deck shows the company name in text')
             preview(os.path.join(preview_dir, slug + '.png'), bg, company, None, False)
     else:
-        im, st = best[1], best[2]
-        im, badge = (fix_for_light if light else fix_for_dark)(im, st)
-        if im.height > H: im = im.resize((max(1, round(im.width * H / im.height)), H), Image.LANCZOS)
+        im, badge, st, src = best
         im.save(os.path.join(out_dir, name))
         st2 = analyse(im)
         res.update(file=name, badge=badge, ok=True)
-        print(f'RESULT {name}  badge={badge}  lum={st2["lum_mean"]:.2f} colours={st["colours"]} from {best[3][:80]}')
+        print(f'RESULT {name}  badge={badge}  lum={st2["lum_mean"]:.2f} colours={st["colours"]} from {src[:80]}')
         preview(os.path.join(preview_dir, slug + '.png'), bg, company, im, badge)
     print('preview', os.path.join(preview_dir, slug + '.png'))
     return res
