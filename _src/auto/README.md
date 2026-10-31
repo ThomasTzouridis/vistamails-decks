@@ -1,6 +1,38 @@
+# VistaMails decks: the automatic per-lead pipeline (live 2026-10-31, hub server)
+
+Thomas 2026-10-31: "This is the perfect presentation ... I want every other lead personalized ... This must be for every single lead."
+So every lead who accepts a connection in a live "VistaMails | <Sender> | 1A|1B" campaign gets a deck in exactly the approved layout
+(`_src/template.html` + `_src/build.py`, frozen; only the lead slots change) before HeyReach message 2 (connect + 3 h + 4 days) sends
+the `presentation` link. No model call anywhere.
+
+| Piece | Where | Cadence |
+|---|---|---|
+| Poller | `_src/auto/vm_poll.py` in this repo, runs in the server checkout `~/vm-decks` (remote `git@github-vistamails:...`, deploy key `~/.ssh/vm_deploy`, identity "ActiScale Deck Bot") | mac-hub job `vista_decks` (`AIOS/automations/mac-hub/jobs/vista_decks.py`), every 1800 s, timeout 3000 s, up to 40 decks per run |
+| Hosting | GitHub Pages, custom domain https://vistamails-cases.com/<slug>/ (DNS at Spaceship, mirror thomastzouridis.github.io/vistamails-decks) | live ~1 min after push |
+| Fallback | `404.html` (rebuilt by the poller from the lists: slug -> company, "still being prepared" + Book button) | whenever the list map changes |
+| State | `_private/vm_poll_state.json` (per slug: status new/retry/built/failed, attempts, note; `_conn` per lead: first seen, slug, link, check; `_unmatched`, `_flagged`), `_private/vm_leads.json`, lock `_private/vm_poll.lock` (pid) | server only, gitignored |
+| Keys (`~/Desktop/AIOS/.env` on the server) | `HEYREACH_VISTAMAILS_API_KEY`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`, `SLACK_USER_TOKEN` | |
+| Run by hand | `ssh thomastzouridis@100.127.216.43`, `cd ~/vm-decks && python3 _src/auto/vm_poll.py --dry` (nothing changes) or `--slug <slug>` | log `~/Desktop/AIOS/automations/mac-hub/logs/jobs/vista_decks.log` |
+
+## One run, step by step
+1. `git pull --rebase --autostash`, then HeyReach `/campaign/GetAll`: every campaign whose name matches `VistaMails | <Sender> | 1A|1B` and is not DRAFT/CANCELED (FAILED campaigns stay in, their connected leads still deserve a deck; the 16 paused Klaviyo campaigns send no deck and are skipped). 1A -> guarantee A (refund + $5,000), 1B -> B.
+2. `/campaign/GetLeadsFromCampaign` per campaign: connected = `leadConnectionStatus` matching accept/connected/already (not None, ConnectionSent, Pending). Key = LinkedIn handle from the profile URL.
+3. `/list/GetLeadsFromList` per campaign list: custom fields `normalizedcompanyname` (the company as message 2 writes it) and `presentation` (the URL message 2 sends; slug = last path segment), first and last name. Every slug -> company pair goes into `_private/vm_leads.json` for the 404 page.
+4. Website from Supabase `ocean_leads` by handle (`domain`, `companywebsite`, `sheet_company_website`, `company_email_domain`, then non-free email domains): the first host that shares a real word with the company name (`site_matches`, GENERIC words ignored). No match = no deck, the lead is listed once in a Slack DM and keeps the fallback. A `normalizedcompanyname` that is clearly broken (<=2 chars or a stopword like "My") is replaced by the Supabase company name for the deck (message 2 still sends the field as it is; the note is in the state file).
+5. Per slug not yet built (max 40 per run, `MAX_ATTEMPTS` 3 on infrastructure failures): screenshot = `assets/shots/<slug>.jpg` if present (1510 were taken in advance on 2026-10-18), else `tools/shot.py` (Playwright, 1200 px, 16:10) -> copied there; spec `_src/specs/<slug>.json` {slug, company, first_name, last_name, domain, shot, guarantee}; `tools/logo.py ... --spec --on-none remove` (optional, a failure or a guard refusal means company name in text); `build.py`; `git add` the 4 lead files, one commit `deck <slug> (auto)`.
+6. `404.html` rebuilt if the slug map changed, then `pull --rebase` + `push` (3 tries, a failed push DMs Thomas and is retried next run; commits never get lost).
+7. `presentation` field: written on the campaign lead and the list lead (`PATCH UpdateLeadCustomFields`, `{"leadMemberIdOrUrl": url, "customFields": {"presentation": link}}`) ONLY when it is empty or names another slug. Normally the lists already carry the right URL, so nothing is written.
+8. Control check per connected lead (one DM per lead and problem): URL MISMATCH (HeyReach sends another slug), NO presentation FIELD, DECK FAILED, BUILT BUT NOT LIVE after 30 min, NO DECK n min after connect. `live_code` fetches the custom domain and falls back to the github.io mirror; a dead custom domain is one separate DM.
+
+## Guard rails
+- The poller never edits template.html or build.py, never deletes anything, never writes a sheet (Presentation Log is hr_track's), never calls a model.
+- A slug is built once. To rebuild one deck: delete `<slug>/`, `_src/specs/<slug>.json` and the slug entry in the state file, run `--slug <slug>`.
+- A new campaign with the same name pattern, a new sender or a new list is picked up automatically on the next run. A campaign with another naming or a different message chain needs a look at `CAMP_RE` and the guarantee mapping first.
+- Leads without a deck as of 2026-10-31 (fallback shown, DM sent): Caroline Kroll ("Kroll", Supabase site no-cosmetics.de does not match), David Hetrick (GIK, no DB row), João Paulo Nasser (Flavia Nasser, no DB row), Fabian Bentz (Zahnheld, no DB row), Dr. Manmit Kumarr (Soul Miracles, site manmitkumarr.com does not match). Fix = add the website to ocean_leads (or correct normalizedcompanyname in the list) and the next run builds them.
+
 # VistaMails tracking (live 2026-10-19, one-to-one the craze&friends model)
 
-Since 2026-10-19 evening the engine is the generic mac-hub tracker `~/Desktop/AIOS/automations/mac-hub/hr_track.py` (one engine for every client, driven by `mac-hub/clients/vistamails.json`); this folder holds no code anymore. A new client is set up with the SOP `Desktop/SOPs/KPIs/Customer Performance Tracking.md` (one command, `mac-hub/new_client_tracking.py`). Everything below runs on the MacBook (mac-hub, launchd `com.actiscale.macsched`), nothing is done by hand. Thomas 2026-10-19: "every
+Since 2026-10-19 evening the engine is the generic mac-hub tracker `~/Desktop/AIOS/automations/mac-hub/hr_track.py` (one engine for every client, driven by `mac-hub/clients/vistamails.json`); this folder holds no code anymore. A new client is set up with the SOP `Desktop/SOPs/KPIs/Customer Performance Tracking.md` (one command, `mac-hub/new_client_tracking.py`). Everything below runs on the hub server automation-hub-01 (mac-hub systemd `actiscale-macsched`, since 2026-10-21), nothing is done by hand. Thomas 2026-10-19: "every
 campaign gets tracked, every message gets tracked, every sending gets tracked, and every meeting gets tracked, as we did it for Crazy
 Friends", same sheet layout, same Google Doc format for the copies, same meeting tracker with the Prospeo phone lookup.
 
@@ -12,7 +44,7 @@ Friends", same sheet layout, same Google Doc format for the copies, same meeting
 | Sheet | "VistaMails \| Meetings & Tracking", https://docs.google.com/spreadsheets/d/1j6zKhSLC46BIm-oWQmYd761nQuHsVili-na1xGKbQfE | tabs Meetings, Performance, Copy, Presentation Log |
 | State | `mac-hub/state/vistamails_track.json` (events offset, sessions, first-seen stamps, docs, phones, acted, issues), `vistamails_hr_leads.json` (HeyReach cache 6 h), `vistamails_meet_accounts.json` (lead -> sender account for the meeting rate), `vistamails_track_crash.json` | on the Mac only |
 | Keys (AIOS `.env` on the Mac) | `HEYREACH_VISTAMAILS_API_KEY`, `CALENDLY_VISTAMAILS_API_KEY`, `CALENDLY_VISTAMAILS_BOOKING_URL`, `PROSPEO_API_KEY`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`, `SLACK_USER_TOKEN` | |
-| Run by hand | `ssh thomastzouridis@100.93.68.58`, `cd ~/Desktop/AIOS/automations/mac-hub && python3 -m jobs.vista_track` (or `python3 -m jobs.vista_perf --dry`) | log `logs/jobs/vista_track.log` |
+| Run by hand | `ssh thomastzouridis@100.127.216.43`, `cd ~/Desktop/AIOS/automations/mac-hub && python3 -m jobs.vista_track` (or `python3 -m jobs.vista_perf --dry`) | log `logs/jobs/vista_track.log` |
 
 ## Campaigns (HeyReach workspace VistaMails)
 - 8 senders: Nischaya Basnet 239349, Samir Shrestha 239352, Safal Poudel 239353, Umesh Prasad Pandey 239355, Sushan Phagami 239356, Prajwol Bohara 241564, Shreya Joshi 241565, Shubhank Bhattarai 242690. Prajwol's LinkedIn account was removed from the workspace on 2026-10-19 (his 1A / 1B campaigns 665669 / 665671 are FAILED), so his 4 campaigns are skipped and his Performance rows keep their last values.
@@ -34,7 +66,7 @@ Tab **Presentation Log**: one row per lead who is CONNECTED in the live 1A / 1B 
 - Tab **Copy**: one row per copy (1A, 1B, Klaviyo Campaign 1, Klaviyo Campaign 2), B = the Google Doc with the full message chain (built and kept current by hr_track from the HeyReach sequence, same format as "Messages Craze & Friends": normal text, bold "Message N, ... later" lines, one empty line between paragraphs and messages; the "Examples for Presentation" section is added only once real decks exist, `EXAMPLES` in hr_track), C:F the same four rates over the campaigns that send that copy. G onwards is manual. A new copy (a new third name segment) gets its row on the next run.
 
 ## Deck tracking + bookings, the full pathway (hr_track.py, every 4 h)
-**1. Booking link.** Our exclusive Calendly event type on Umesh's account: https://calendly.com/umesh-gps/vistamails-email-marketing-discovery-call (event type 827bbde0-a5da-4d5a-9604-e73b1d8de857, `CALENDLY_VISTAMAILS_BOOKING_URL`). Only bookings of THIS event type are ours; Umesh's own event types (Email Marketing Discovery Call, Strategy Call, Email & SMS) are his business and skipped. The PAT has no `users:read`, so the owner's user URI comes from the public booking lookup and sits in `clients/vistamails.json` (`cal_user`). Open flag 2026-10-19: the deck template's Book button still points at calendly.com/umeshpdy95/email-strategy-consutling (Umesh's own, no API), so a booking from a deck is invisible to the tracker until the deck link is switched to the umesh-gps link.
+**1. Booking link.** Our exclusive Calendly event type on Umesh's account: https://calendly.com/umesh-gps/vistamails-email-marketing-discovery-call (event type 827bbde0-a5da-4d5a-9604-e73b1d8de857, `CALENDLY_VISTAMAILS_BOOKING_URL`). Only bookings of THIS event type are ours; Umesh's own event types (Email Marketing Discovery Call, Strategy Call, Email & SMS) are his business and skipped. The PAT has no `users:read`, so the owner's user URI comes from the public booking lookup and sits in `clients/vistamails.json` (`cal_user`). Since 2026-10-31 every deck and the 404 page book on this link (build.py BOOK), so deck bookings are tracked.
 
 **2. How a deck reports.** Every deck (`_src/template.html`, every `<slug>/index.html`) carries one tracking `<script>` before `</body>` that sends beacons (`navigator.sendBeacon`, text/plain) to mac-hub `https://macbook-air-von-thomas.tail94ea31.ts.net/webhook/vm-deck-track` (hub.py appends every POST with the visitor IP to `~/Desktop/AIOS/automations/mac-hub/logs/events.jsonl`). Events per visit (one random session id): `open` (referrer, UA, width, timezone, slide count, phone), `slide` (new deepest slide), `video`, `book` (click on the Calendly link), `ping` every 30 s while visible, `leave`.
 
