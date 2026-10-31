@@ -18,7 +18,7 @@ The Presentation Log sheet is owned by mac-hub hr_track.py (clients/vistamails.j
   python3 _src/auto/vm_poll.py --dry      list who is connected and what would be built, change nothing
   python3 _src/auto/vm_poll.py --slug x   build one slug (must be connected in HeyReach, or add --force)
 """
-import os, sys, re, json, time, shutil, subprocess, urllib.request, urllib.error, datetime, argparse, html
+import os, sys, re, json, time, shutil, subprocess, urllib.request, urllib.error, datetime, argparse, signal
 HERE = os.path.dirname(os.path.abspath(__file__)); SRC = os.path.dirname(HERE); ROOT = os.path.dirname(SRC)
 HOME = os.path.expanduser('~')
 AIOS = os.path.join(HOME, 'Desktop', 'AIOS')
@@ -378,13 +378,25 @@ def resolve(lid, info, f, state):
             'sender': info['sender'], 'status': info['status'], 'name': ('%s %s' % (f.get('first') or info['first'], f.get('last') or info['last'])).strip()}, ''
 
 
+def lock_held():
+    """True while another poller process holds the lock (pid alive); a lock left by a killed process is ignored."""
+    if not os.path.exists(LOCK): return False
+    try: pid = int(open(LOCK).read().split()[0])
+    except Exception: pid = 0
+    if pid:
+        try: os.kill(pid, 0); return True
+        except OSError: return False
+    return time.time() - os.path.getmtime(LOCK) < 4 * 3600
+
+
 def main():
     global KEY
     ap = argparse.ArgumentParser(); ap.add_argument('--dry', action='store_true'); ap.add_argument('--slug'); ap.add_argument('--force', action='store_true')
     a = ap.parse_args()
-    if os.path.exists(LOCK) and time.time() - os.path.getmtime(LOCK) < 4 * 3600: say('locked, previous run active'); return
+    if lock_held(): say('locked, previous run active'); return
     os.makedirs(PRIV, exist_ok=True)
-    open(LOCK, 'w').write(now())
+    open(LOCK, 'w').write('%d %s' % (os.getpid(), now()))
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))   # a scheduler restart (deploy.sh) must not leave a stale lock
     try:
         KEY = env('HEYREACH_VISTAMAILS_API_KEY')
         if not KEY: raise RuntimeError('HEYREACH_VISTAMAILS_API_KEY missing in ~/Desktop/AIOS/.env')
