@@ -29,8 +29,8 @@ const seen=new Set(); const home=location.origin+'/'; const co=(company||'').toL
 const vis=el=>{const r=el.getBoundingClientRect();if(r.width<20||r.height<6||r.top>260||r.bottom<0)return null;const s=getComputedStyle(el);if(s.visibility==='hidden'||s.display==='none'||+s.opacity===0)return null;for(let p=el;p;p=p.parentElement){const ps=getComputedStyle(p);if(ps.display==='none'||ps.visibility==='hidden')return null;}return r;};
 const prio=(el,txt)=>{let p=0;if(el.closest('a[href="/"],a[href="'+home+'"],a[href="'+location.origin+'"]'))p+=3;if(/logo|brand|wordmark/i.test(txt))p+=2;if(co&&txt.toLowerCase().includes(co))p+=1;if(el.closest('header,[role=banner]'))p+=1;return p;};
 for(const root of document.querySelectorAll(Q)){
-  for(const i of root.querySelectorAll('img')){const u=i.currentSrc||i.src;if(!u||seen.has(u))continue;const r=vis(i);if(!r)continue;seen.add(u);o.imgs.push({src:u,w:r.width,h:r.height,alt:i.alt||'',top:r.top,prio:prio(i,(i.alt||'')+' '+i.className+' '+i.id+' '+u)});}
-  for(const s of root.querySelectorAll('svg')){const r=vis(s);if(!r)continue;let h=s.outerHTML;if(seen.has(h))continue;seen.add(h);const defs=[];for(const u of s.querySelectorAll('use')){const id=(u.getAttribute('href')||u.getAttribute('xlink:href')||'');if(id.startsWith('#')){const d=document.getElementById(id.slice(1));if(d)defs.push(d.outerHTML);}}if(defs.length)h+='<svg style="display:none">'+defs.join('')+'</svg>';const cs=getComputedStyle(s);o.svgs.push({html:h.slice(0,120000),w:r.width,h:r.height,color:cs.color,fill:cs.fill,top:r.top,alt:s.getAttribute('aria-label')||(s.querySelector('title')||{}).textContent||'',prio:prio(s,(s.getAttribute('class')||'')+' '+s.id+' '+(s.getAttribute('aria-label')||'')+' '+((s.querySelector('title')||{}).textContent||''))});}
+  for(const i of root.querySelectorAll('img')){const u=i.currentSrc||i.src;if(!u||seen.has(u))continue;const r=vis(i);if(!r)continue;seen.add(u);o.imgs.push({src:u,w:r.width,h:r.height,nw:i.naturalWidth,nh:i.naturalHeight,alt:i.alt||'',top:r.top,prio:prio(i,(i.alt||'')+' '+i.className+' '+i.id+' '+u)});}
+  for(const s of root.querySelectorAll('svg')){const r=vis(s);if(!r)continue;let h=s.outerHTML;if(seen.has(h))continue;seen.add(h);const defs=[];const ext=[];for(const u of s.querySelectorAll('use')){const id=(u.getAttribute('href')||u.getAttribute('xlink:href')||'');if(id.startsWith('#')){const d=document.getElementById(id.slice(1));if(d)defs.push(d.outerHTML);}else if(id.includes('#')){ext.push(new URL(id,location.href).href);}}if(defs.length)h+='<svg style="display:none">'+defs.join('')+'</svg>';const cs=getComputedStyle(s);o.svgs.push({ext:ext,html:h.slice(0,120000),w:r.width,h:r.height,color:cs.color,fill:cs.fill,top:r.top,alt:s.getAttribute('aria-label')||(s.querySelector('title')||{}).textContent||'',prio:prio(s,(s.getAttribute('class')||'')+' '+s.id+' '+(s.getAttribute('aria-label')||'')+' '+((s.querySelector('title')||{}).textContent||''))});}
   for(const el of [root,...root.querySelectorAll('*')]){try{const r=vis(el);if(!r||r.width>900)continue;const bg=getComputedStyle(el).backgroundImage||'';const m=bg.match(/url\(["']?([^"')]+)["']?\)/);if(m&&!seen.has(m[1])){seen.add(m[1]);o.bgs.push({src:m[1],w:r.width,h:r.height,top:r.top,alt:'',prio:prio(el,el.className+' '+el.id+' '+m[1])});}}catch(e){}}
 }
 for(const l of document.querySelectorAll('link[rel*="icon" i]')){if(l.href)o.icons.push(l.href);}
@@ -68,8 +68,25 @@ def fetch_candidates(url, company):
         srcs.sort(key=lambda x: (-x[2].get('prio', 0), x[2].get('top', 0)))
         srcs = srcs[:10] + [('icon', u, {'prio': 0}) for u in c['icons'][:2]]
         print(f"candidates: {len(c['imgs'])} img, {len(c['svgs'])} svg, {len(c['bgs'])} css, {len(c['icons'])} icon")
-        rp = ctx.new_page()
-        for kind, src, meta in srcs[:14]:
+        rp = ctx.new_page(); sprites = {}
+        for kind, src, meta in srcs:
+            if kind != 'svg' or not meta.get('ext'): continue
+            for ref in meta['ext']:
+                u, _, sid = ref.partition('#')
+                if u not in sprites:
+                    try: sprites[u] = ctx.request.get(u, timeout=15000).text()
+                    except Exception: sprites[u] = ''
+                m = re.search(r'<symbol[^>]*[\s]id="' + re.escape(sid) + r'"[\s\S]*?</symbol>', sprites[u]) or re.search(r'<svg[\s\S]*', sprites[u]) if sprites[u] else None
+                if m:
+                    sym = m.group(0)
+                    if sym.startswith('<svg'):           # a whole file, not a sprite: make it the symbol
+                        sym = re.sub(r'^<svg', f'<symbol id="{sid}"', sym).replace('</svg>', '</symbol>')
+                    src = src.replace(ref, '#' + sid).replace(ref.split('/')[-1] if ref.startswith('http') else ref, '#' + sid)
+                    src = re.sub(r'(href=")[^"#]*#' + re.escape(sid) + '"', lambda mm: mm.group(1) + '#' + sid + '"', src)
+                    src += '<svg style="display:none">' + sym + '</svg>'
+            meta['html'] = src
+        srcs = [(k, m.get('html', s) if k == 'svg' else s, m) for k, s, m in srcs]
+        for kind, src, meta in srcs:
             png = render(rp, kind, src, meta)
             if png is None: print('  render failed', kind, (meta.get('alt') or src)[:70]); continue
             if meta.get('w', 999) < 60 or meta.get('h', 999) < 14: meta['prio'] = meta.get('prio', 0) - 6   # a 32px flag or dot on the page
@@ -88,7 +105,8 @@ def render(pg, kind, src, meta):
             body = f'<div id="t" style="display:inline-block;{style}">{src}</div>'
             css = '#t svg{height:400px;width:auto;display:block}'
         else:
-            body = f'<img id="t" src="{src}" style="height:400px;width:auto;display:block">'
+            hh = 400 if (src.lower().split('?')[0].endswith('.svg') or meta.get('nh', 0) >= 400) else max(meta.get('nh', 0), 1)   # never upscale a raster
+            body = f'<base href="{meta.get("base", "")}"><img id="t" src="{src}" style="height:{hh}px;width:auto;display:block">'
             css = ''
         pg.set_content(f'<html><body style="margin:0;background:transparent"><style>{css}</style>{body}</body></html>', wait_until='load')
         pg.wait_for_timeout(600)
@@ -148,6 +166,7 @@ def score(kind, im, alt, company):
     elif asp < 1.15: s -= 3                          # an icon
     if asp > 14: s -= 2                              # a whole header strip, not a logo
     if kind == 'icon': s -= 4
+    if h < 90: s -= 8                                # a raster this small is pixel mush at deck size
     if company.lower().split()[0] in (alt or '').lower(): s += 1.5
     if st['cover'] < 0.06: s -= 1.5                  # mostly empty: text with huge padding or a thin rule
     if st['colours'] >= 5: s -= 4                    # a photo or a product shot, not a logo
@@ -227,7 +246,7 @@ def main():
     else:
         im, st = best[1], best[2]
         im, badge = fix_for_dark(im, st)
-        if im.height != H: im = im.resize((max(1, round(im.width * H / im.height)), H), Image.LANCZOS)
+        if im.height > H: im = im.resize((max(1, round(im.width * H / im.height)), H), Image.LANCZOS)
         for f in local: os.remove(os.path.join(LOGOS, f))
         out = slug + '.png'; im.save(os.path.join(LOGOS, out))
         st2 = analyse(im)

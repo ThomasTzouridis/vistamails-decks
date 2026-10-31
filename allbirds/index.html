@@ -124,9 +124,15 @@ p{margin:0}
 .contact b{color:#e4ece9;font-weight:700}
 .talk .r{margin:0;aspect-ratio:721/431;border-radius:1.9cqw;overflow:hidden;box-shadow:0 1.6cqw 1.7cqw rgba(0,0,0,.85)}
 .talk .r img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 80%}
-.offer h2{font-size:3.1cqw}.offer .saw{margin-top:1.5cqw;flex:0 0 auto;grid-template-columns:38cqw 1fr;gap:3.5cqw}.offer .saw .lines{font-size:1.3cqw;line-height:1.42}.offer .flow{gap:.9cqw}.offer .fs p{font-size:1.05cqw}.offer .fs h3{font-size:1.6cqw;margin:.1cqw 0 .3cqw}
-.offer .gbox{margin-top:1.7cqw;align-self:stretch;padding:1.1cqw 1.6cqw 1.2cqw;gap:.4cqw}.offer .gbox h3{font:700 1.9cqw/1.15 var(--display);margin:0;letter-spacing:-.01em}.offer .gbox p{font-size:1.15cqw;line-height:1.42;color:#e4ece9;margin:0}
-html.sphone .offer .gbox{margin-top:12px;padding:10px 12px 12px}html.sphone .offer h2{font-size:24px}html.sphone .offer .saw .lines{font-size:13.5px}html.sphone .offer .fs p{font-size:12px}html.sphone .offer .gbox h3{font-size:18px}html.sphone .offer .gbox p{font-size:12px}
+.offer h2{font-size:3.4cqw;max-width:58cqw}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:3cqw;margin-top:4cqw}
+.step{border-top:.25cqw solid var(--hi);padding-top:1cqw}.step .n{font:800 1.1cqw var(--mono);color:var(--hi);letter-spacing:.1em}
+.step h3{font:700 2.2cqw/1.1 var(--display);margin:.5cqw 0 .4cqw;letter-spacing:-.01em}.step p{font-size:1.3cqw;line-height:1.4;color:var(--muted);margin:0}
+.offerline{margin-top:4cqw;border-left:.4cqw solid var(--hi);padding-left:1.6cqw}.offerline .lab{font:600 1cqw var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.offerline p{font:700 2.4cqw/1.15 var(--display);margin:.4cqw 0 0;letter-spacing:-.015em;max-width:84cqw}
+html.sphone .offer h2{font-size:26px;max-width:none}html.sphone .steps{grid-template-columns:1fr;gap:10px;margin-top:18px}html.sphone .step{border-top-width:2px;padding-top:8px}
+html.sphone .step .n{font-size:10px}html.sphone .step h3{font-size:18px;margin:2px 0 1px}html.sphone .step p{font-size:13px}
+html.sphone .offerline{margin-top:18px;border-left-width:3px;padding-left:12px}html.sphone .offerline .lab{font-size:9px}html.sphone .offerline p{font-size:21px;max-width:none}
 </style>
 <style>/* keep the arrow buttons in scroll view */.reveal-scroll .reveal .controls{display:block!important;position:fixed}</style>
 <style>
@@ -239,17 +245,13 @@ html.sphone .contact.lead{font-size:14px}
 
 <section aria-label="The offer"><div class="s offer">
   <div class="eyebrow in">What we saw at Allbirds</div>
-  <h2 class="in">Your best customers already own a pair.</h2>
-  <div class="saw in">
-    <div class="lines"><p>Allbirds sells shoes and apparel for men and women, with new colours and styles landing through the year. A customer who bought once has every reason to buy again, if they hear about it.</p><p>The customers from the last two years who have not ordered since, the browsers who never checked out and the subscribers who stopped opening are all still in your Klaviyo account.</p></div>
-    <div class="flow">
-      <span class="lab0">How we work</span>
-      <div class="fs"><span class="n">01</span><div><h3>Audit, days 1 to 3</h3><p>We go through your Klaviyo account and list every group that stopped buying: lapsed customers, abandoned carts, one-time buyers, subscribers who stopped opening. </p></div></div>
-      <div class="fs"><span class="n">02</span><div><h3>Flows, live by day 14</h3><p>Win-back, cart, post-purchase and VIP flows, written and designed by us. Deliverability gets fixed first so the emails land in the inbox.</p></div></div>
-      <div class="fs"><span class="n">03</span><div><h3>Campaigns, from day 14 on</h3><p>Three to four campaigns a week to the right segments, A/B tests, SMS where it makes sense, and a short report in your inbox every week.</p></div></div>
-    </div>
+  <h2 class="in">Thousands of Allbirds customers bought once and never heard from you again.</h2>
+  <div class="steps in">
+    <div class="step"><span class="n">01</span><h3>Audit</h3><p>Day 3: we know who stopped buying.</p></div>
+    <div class="step"><span class="n">02</span><h3>Flows</h3><p>Day 14: win-back and cart flows live.</p></div>
+    <div class="step"><span class="n">03</span><h3>Campaigns</h3><p>Every week: campaigns, tests, one report.</p></div>
   </div>
-  <div class="gbox in"><span class="lab">The offer for Allbirds</span><h3>20% more revenue in 60 days, or you pay nothing.</h3><p>Our segment reactivation system was developed and engineered by the Ex-Klaviyo Chief of Product. We agree the baseline with you up front. If Allbirds is not up 20% in revenue after 60 days, we refund everything you paid us, 100% of it and not a portion.</p></div>
+  <div class="offerline in"><span class="lab">The offer</span><p>20% more revenue in 60 days. Or you pay nothing.</p></div>
   <button class="nx" type="button">More of our work<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
 </div></section>
 

@@ -12,11 +12,9 @@ Spec fields (JSON):
   logo_badge    true = logo on a white badge (for dark logos)
   guarantee     "A" = 100% refund plus $5,000 transfer (message 1A), "B" = 100% refund only (message 1B). Default "B".
   cover_line    optional, default "More revenue for <company>, from the customers you already have."
-  saw_head      headline of slide 2 (what we saw at the lead), max ~8 words, one line if possible
-  saw_l1, saw_l2  two plain paragraphs, 25 to 40 words each: what the brand sells and who buys (l1), which customer groups
-                already sit in their Klaviyo account (l2). Facts from their site only, no numbers we did not see, no dashes,
-                plain human wording. Slide 2 = what we saw + how we work (fixed 3 steps) + the offer box (guarantee A or B).
-  saw_turn      ignored since 2026-10-31 (slide 2 shows the offer instead)
+  saw           slide 2, the ONE line of what we saw at the lead (max ~18 words, plain, specific, human; falls back to saw_head).
+                Slide 2 = this line + three fixed step words (Audit, Flows, Campaigns) + the offer in one line (guarantee A or B).
+  saw_head, saw_l1, saw_l2, saw_turn  old slide 2 fields, no longer shown (saw_head only as fallback for saw)
   audit_tail    optional sentence appended to step 01 (something specific to their store), default ""
   proof_head    optional, default "More of our work."
   talk_text     optional, default sentence under the Let's talk headline
@@ -27,17 +25,13 @@ HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 BOOK = 'https://calendly.com/umesh-gps/vistamails-email-marketing-discovery-call'
 LOGOS = ''.join(f'<img src="../assets/clients/{n}" alt="">' for n in
                 ["walkeepaws.png", "keebos.png", "lunarchi.png", "viebys.png", "pukingball.png", "allure.png", "celsius.png", "bamboobaby.png", "marbella.png", "martonfraser.png"])
-G = {
-    'A': ("20% more revenue in 60 days, or you pay nothing and we send you $5,000.",
-          "Our segment reactivation system was developed and engineered by the Ex-Klaviyo Chief of Product. We agree the baseline with you up front. If {co} is not up 20% in revenue after 60 days, we refund everything you paid us, 100% of it and not a portion, and personally transfer $5,000 to your bank account to say sorry."),
-    'B': ("20% more revenue in 60 days, or you pay nothing.",
-          "Our segment reactivation system was developed and engineered by the Ex-Klaviyo Chief of Product. We agree the baseline with you up front. If {co} is not up 20% in revenue after 60 days, we refund everything you paid us, 100% of it and not a portion."),
-}
+G = {'A': "20% more revenue in 60 days. Or you pay nothing and get $5,000.",
+     'B': "20% more revenue in 60 days. Or you pay nothing."}
 for path in sys.argv[1:]:
     sp = json.load(open(path, encoding='utf-8'))
     e = html.escape
     co = e(sp['company'])
-    for k in ('slug', 'company', 'domain', 'shot', 'saw_head', 'saw_l1', 'saw_l2'):
+    for k in ('slug', 'company', 'domain', 'shot'):
         assert sp.get(k), f'{path}: missing {k}'
     assert os.path.exists(os.path.join(ROOT, 'assets', 'shots', sp['shot'])), f'{path}: shot file missing'
     name = ' '.join(x for x in (sp.get('first_name', '').strip(), sp.get('last_name', '').strip()) if x)
@@ -48,14 +42,13 @@ for path in sys.argv[1:]:
         fb = "var s=document.createElement('span');s.className='co';s.textContent=this.alt;(this.closest('.llb')||this).replaceWith(s)"
         img = f'<img class="ll" src="../assets/leadlogos/{sp["logo"]}" alt="{co}" onerror="{fb}">'
         mark = f'<span class="llb">{img}</span>' if sp.get('logo_badge') else img
-    gh, gb = G[sp.get('guarantee', 'B').upper()]
-    lines = f"<p>{e(sp['saw_l1'])}</p><p>{e(sp['saw_l2'])}</p>"
+    gh = G[sp.get('guarantee', 'B').upper()]
     out = open(os.path.join(HERE, 'template.html'), encoding='utf-8').read()
     for k, v in {'COMPANY': co, 'PREPARED': prep, 'CO_MARK': mark, 'DOMAIN': e(sp['domain']), 'SHOT': sp['shot'],
                  'COVER_LINE': e(sp.get('cover_line') or f"More revenue for {sp['company']}, from the customers you already have."),
-                 'SAW_HEAD': e(sp['saw_head']), 'SAW_LINES': lines, 'AUDIT_TAIL': e(sp.get('audit_tail', '')),
+                 'AUDIT_TAIL': e(sp.get('audit_tail', '')),
                  'PROOF_HEAD': e(sp.get('proof_head') or "More of our work."),
-                 'G_HEAD': gh, 'G_BODY': gb.format(co=co), 'LOGOS': LOGOS,
+                 'G_HEAD': gh, 'SAW': e(sp.get('saw') or sp['saw_head']), 'LOGOS': LOGOS,
                  'TALK_TEXT': e(sp.get('talk_text') or f"Thirty minutes with Umesh, Co-Founder and CEO: the audit for {sp['company']}, the dormant segments we would start with and what the first 60 days look like."),
                  'BOOKING_URL': sp.get('booking_url') or BOOK}.items():
         out = out.replace('{{' + k + '}}', v)
