@@ -68,6 +68,9 @@ def fetch_candidates(url, company, local_files):
             try: pg.goto(url, wait_until='domcontentloaded', timeout=45000)
             except Exception as e: print('page failed', str(e)[:80]); b.close(); return out
         pg.wait_for_timeout(2500)
+        for n in range(8):                           # cloudflare "Just a moment" challenge: give it time to pass
+            if not re.search(r'just a moment|attention required|checking your browser|verify you are human', pg.title(), re.I): break
+            pg.wait_for_timeout(2000)
         for s in ACCEPT:
             try: pg.locator(s).first.click(timeout=800); pg.wait_for_timeout(500); break
             except Exception: pass
@@ -106,9 +109,9 @@ def fetch_candidates(url, company, local_files):
                 if re.search(r'\.(jpe?g)(\?|$)', src, re.I) and 'logo' not in src.lower() and meta.get('prio', 0) < 3: print('  skip photo', src[:70]); continue
                 big = fullsize(src)
                 if big != src:
-                    meta['nh'] = 9999; png = render(rp, kind, big, meta)
+                    nh0 = meta.get('nh', 0); meta['nh'] = 9999; png = render(rp, kind, big, meta)
                     if png is not None: meta['nh'] = png.height; src = big
-                    else: meta['nh'] = meta.get('nh', 0) if meta.get('nh', 0) != 9999 else 0
+                    else: meta['nh'] = nh0
             png = render(rp, kind, src, meta)
             if png is None: print('  render failed', kind, (meta.get('alt') or src)[:70]); continue
             if meta.get('w', 999) < 60 or meta.get('h', 999) < 14: meta['prio'] = meta.get('prio', 0) - 6   # a 32px flag or dot on the page
@@ -130,7 +133,7 @@ def fullsize(u):
     """the header serves a thumbnail; ask the CDN for the big one (Shopify width=, _WxH suffix, imgix/cloudinary w=)"""
     u = re.sub(r'([?&])width=\d+', r'\g<1>width=1600', u)
     u = re.sub(r'([?&])w=\d+', r'\g<1>w=1600', u)
-    u = re.sub(r'_(\d{2,4})x(\d{2,4})?(_crop_\w+)?(\.(png|webp|gif|svg))', r'', u) if '/cdn/shop/' in u else u
+    u = re.sub(r'_(\d{2,4})x(\d{2,4})?(_crop_\w+)?(\.(png|webp|gif|svg|jpe?g))', r'\4', u) if '/cdn/shop/' in u else u
     return u
 
 
@@ -144,14 +147,16 @@ def render(pg, kind, src, meta):
             body = f'<div id="t" style="display:inline-block;{style}">{src}</div>'
             css = '#t svg{height:400px;width:auto;display:block}'
         else:
-            hh = 400 if (src.lower().split('?')[0].endswith('.svg') or meta.get('nh', 0) >= 400) else max(meta.get('nh', 0), 1)   # never upscale a raster
-            body = f'<base href="{meta.get("base", "")}"><img id="t" src="{src}" style="height:{hh}px;width:auto;display:block">'
+            body = f'<base href="{meta.get("base", "")}"><img id="t" src="{src}" style="width:auto;display:block">'
             css = ''
         pg.set_content(f'<html><body style="margin:0;background:transparent"><style>{css}</style>{body}</body></html>', wait_until='load')
         pg.wait_for_timeout(600)
         if kind != 'svg':
-            ok = pg.evaluate("()=>{const i=document.getElementById('t');return i.complete&&i.naturalWidth>0}")
-            if not ok: return None
+            nat = pg.evaluate("()=>{const i=document.getElementById('t');return i.complete&&i.naturalWidth>0?i.naturalHeight:0}")
+            if not nat: return None
+            hh = 400 if (src.lower().split('?')[0].endswith('.svg') or nat >= 400) else nat     # never upscale a raster
+            pg.evaluate(f"()=>{{document.getElementById('t').style.height='{hh}px'}}")
+            pg.wait_for_timeout(100)
         buf = pg.locator('#t').screenshot(omit_background=True, timeout=8000)
         return Image.open(io.BytesIO(buf)).convert('RGBA')
     except Exception:
