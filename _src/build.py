@@ -7,7 +7,7 @@ Spec fields (JSON):
   last_name     last name of the lead (cover: "Prepared for <first_name> <last_name>, <company>")
   domain        the lead's site, shown under the screenshot (required)
   shot          file in assets/shots/ (required, the cover shows it; take it with 3DforScience/_src/tools/shot.py)
-  logo          file in assets/leadlogos/, ALWAYS produced by tools/logo.py (py tools\logo.py <slug> "<Company>" https://<domain> --spec specs\<slug>.json):
+  logo          file in assets/leadlogos/, ALWAYS produced by tools/logo.py (py tools/logo.py <slug> "<Company>" https://<domain> --bg #041010 --out assets/leadlogos --spec specs/<slug>.json --badge-key logo_badge):
                 it picks the site's wordmark, rejects icons, photos and pixel-small rasters, paints one-colour logos white, puts dark
                 multi-colour logos on a white badge (logo_badge) and writes a preview on the deck background to assets/leadlogos/_preview/.
                 No usable logo = key omitted = company name in text. build.py refuses a png that is small, square or dark without a badge.
@@ -23,11 +23,14 @@ Spec fields (JSON):
 """
 import json, sys, os, html
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
+BG = '#041010'   # the deck --paper, the logo tool checks against it
 BOOK = 'https://calendly.com/umesh-gps/vistamails-email-marketing-discovery-call'
 LOGOS = ''.join(f'<img src="../assets/clients/{n}" alt="">' for n in
                 ["walkeepaws.png", "keebos.png", "lunarchi.png", "viebys.png", "pukingball.png", "allure.png", "celsius.png", "bamboobaby.png", "marbella.png", "martonfraser.png"])
-G = {'A': "The deal: 20% more revenue in 60 days. If not, you pay nothing and we send you $5,000.",
-     'B': "The deal: 20% more revenue in 60 days. If not, you pay nothing."}
+G = {'A': ("Within 60 days we increase {co}'s revenue by 20% with our segment reactivation system. If we do not, we refund 100% of what you paid us and transfer an additional $5,000 to your bank account.",
+           "100% refund of every fee paid to VistaMails, plus $5,000 transferred to {co}'s bank account."),
+     'B': ("Within 60 days we increase {co}'s revenue by 20% with our segment reactivation system. If we do not, we refund 100% of what you paid us.",
+           "100% refund of every fee paid to VistaMails.")}
 for path in sys.argv[1:]:
     sp = json.load(open(path, encoding='utf-8'))
     e = html.escape
@@ -41,23 +44,20 @@ for path in sys.argv[1:]:
     if sp.get('logo'):
         lp = os.path.join(ROOT, 'assets', 'leadlogos', sp['logo'])
         assert os.path.exists(lp), f'{path}: logo file missing'
-        if lp.lower().endswith('.png'):                      # the logo must read on the dark slide: sharp, wide, bright or on a badge
-            from PIL import Image
-            li = Image.open(lp).convert('RGBA'); op = [q for q in li.getdata() if q[3] > 128]
-            lum = sum(0.2126 * q[0] + 0.7152 * q[1] + 0.0722 * q[2] for q in op) / max(1, len(op)) / 255
-            bad = (li.height < 90 and 'pixel mush') or (li.width / li.height < 1.3 and 'an icon, not a wordmark') or (lum < 0.45 and not sp.get('logo_badge') and 'too dark for the slide')
-            assert not bad, f"{path}: logo {sp['logo']} is {bad}. Run: py tools\logo.py {sp['slug']} \"{sp['company']}\" https://{sp['domain']} --spec {path}"
+        sys.path.insert(0, os.path.join(HERE, 'tools')); from logo import guard
+        bad = guard(lp, BG, sp.get('logo_badge'))
+        assert not bad, f"{path}: logo {sp['logo']} is {bad}. Run: py tools/logo.py {sp['slug']} \"{sp['company']}\" https://{sp['domain']} --bg {BG} --out assets/leadlogos --spec {path} --badge-key logo_badge"
 
         fb = "var s=document.createElement('span');s.className='co';s.textContent=this.alt;(this.closest('.llb')||this).replaceWith(s)"
         img = f'<img class="ll" src="../assets/leadlogos/{sp["logo"]}" alt="{co}" onerror="{fb}">'
         mark = f'<span class="llb">{img}</span>' if sp.get('logo_badge') else img
-    gh = G[sp.get('guarantee', 'B').upper()]
+    gh, gm = (s.format(co=co) for s in G[sp.get('guarantee', 'B').upper()])
     out = open(os.path.join(HERE, 'template.html'), encoding='utf-8').read()
     for k, v in {'COMPANY': co, 'PREPARED': prep, 'CO_MARK': mark, 'DOMAIN': e(sp['domain']), 'SHOT': sp['shot'],
                  'COVER_LINE': e(sp.get('cover_line') or f"More revenue for {sp['company']}, from the customers you already have."),
                  'AUDIT_TAIL': e(sp.get('audit_tail', '')),
                  'PROOF_HEAD': e(sp.get('proof_head') or "More of our work."),
-                 'G_HEAD': gh, 'LOGOS': LOGOS,
+                 'G_HEAD': gh, 'G_MISS': gm, 'LOGOS': LOGOS,
                  'TALK_TEXT': e(sp.get('talk_text') or f"Thirty minutes with Umesh, Co-Founder and CEO: the audit for {sp['company']}, the dormant segments we would start with and what the first 60 days look like."),
                  'BOOKING_URL': sp.get('booking_url') or BOOK}.items():
         out = out.replace('{{' + k + '}}', v)

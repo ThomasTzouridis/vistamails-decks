@@ -1,27 +1,36 @@
 # -*- coding: utf-8 -*-
-"""Lead logo for the dark VistaMails deck, checked and fixed instead of taken as found.
+"""Lead logo for a deck: checked and fixed instead of taken as found. ONE shared tool, identical copy in every deck repo
+(_src/tools/logo.py of Vistamails, Symonds Productions, Craze & Friends, Flytxt, 3DforScience, ConvertPolo).
+Edit it in one place and copy it to the others (Presentations/README.md "Lead logos").
 
-Usage: py logo.py <slug> "<Company>" <url> [--spec specs/<slug>.json] [--keep]
+Usage: py logo.py <slug> "<Company>" <url> --bg <#hex> --out <dir> [--name <file.png>] [--preview <dir>]
+                  [--spec <file> --key logo --value <v> --badge-key logo_badge --on-none remove|text] [--keep] [--json]
 
-Why: every earlier deck pipeline took the first header image that loaded. On a near-black slide that gave
-black wordmarks that vanish, square favicons stretched into the wordmark slot, logos inside an opaque white box,
-and tiny blurred PNGs. This tool renders every candidate (img, inline svg, css background, touch icon) in an
-isolated transparent page, trims it, drops icons and junk, picks the best wordmark and then makes sure it reads
-on #041010: a one-colour logo is painted pure white, a multi-colour logo with dark parts goes on a white badge,
-a bright multi-colour logo stays. Writes assets/leadlogos/<slug>.png, a preview on the deck background in
-assets/leadlogos/_preview/<slug>.png, and with --spec sets "logo" / "logo_badge" in the spec (or removes "logo"
-when nothing usable was found: the deck then shows the company name in text, which is always readable).
---keep: an existing assets/leadlogos/<slug>.(png|svg) is only normalised, nothing is fetched.
+Why: every earlier deck pipeline took the first header image that loaded. That gave black wordmarks that vanish on a dark
+slide, white ones that vanish on a white slide, square favicons stretched into the wordmark slot, logos inside an opaque
+box, product photos, and tiny blurred PNGs. This tool loads the site in a real browser, collects every visible header
+candidate (img, inline svg incl. sprite <use>, css background, touch icon) plus the logo already in the repo, renders each
+one alone on a transparent page (rasters never upscaled, CDN thumbnails asked for at full size), strips boxes, trims,
+drops icons / photos / tiny rasters, picks the best wordmark and makes it read on the deck background:
+  dark deck   one-colour logo -> pure white; dark multi-colour -> white badge (logo_badge); bright multi-colour -> kept
+  light deck  one-colour logo -> ink #131410; light multi-colour -> ink; dark/colourful -> kept
+Writes <out>/<name> (png, height <= 400), a preview on the deck background in <preview>/<slug>.png and, with --spec, sets
+<key> = <value> (default the file name) and <badge-key> (dark decks only). Nothing usable: --on-none remove drops the key
+(the template shows the company name in text), --on-none text writes a wordmark png of the company name instead.
+Prints "RESULT ..." and, with --json, a final JSON line {"file","badge","ok","text"} for pipelines.
+--keep: only the existing <out>/<slug>.(png|svg) (or --name) is normalised, nothing is fetched.
 """
-import sys, os, re, json, io, math, base64
+import sys, os, re, json, io, math
+
 from PIL import Image, ImageDraw, ImageFont
 
-sys.stdout.reconfigure(encoding='utf-8')
-HERE = os.path.dirname(os.path.abspath(__file__)); SRC = os.path.dirname(HERE); ROOT = os.path.dirname(SRC)
-LOGOS = os.path.join(ROOT, 'assets', 'leadlogos'); PREV = os.path.join(LOGOS, '_preview')
-os.makedirs(PREV, exist_ok=True)
-BG = (4, 16, 16); H = 400                      # deck --paper and the output height
+try: sys.stdout.reconfigure(encoding='utf-8')
+except Exception: pass
+H = 400
+INK = (19, 20, 16)
 UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+FONTS = [r'C:\Windows\Fonts\arialbd.ttf', '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
+         '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf']
 
 COLLECT = r"""(company)=>{const o={imgs:[],svgs:[],bgs:[],icons:[]};
 const Q='header, nav, [role=banner], a[href="/"], [class*=logo i], [id*=logo i], [class*=brand i], [class*=navbar i], [class*=header i]';
@@ -39,18 +48,25 @@ ACCEPT = ["#onetrust-accept-btn-handler", "#CybotCybotBotDialogBodyLevelButtonLe
           r"text=/^\s*(accept|accept all|accept all cookies|allow all|i agree|got it|alle akzeptieren|akzeptieren|aceptar|accepter|tout accepter)\s*$/i"]
 
 
-def fetch_candidates(url, company):
+def fetch_candidates(url, company, local_files):
+    """-> [(kind, image, src, alt, prio)] from the live site plus the local files already in the repo (kind 'local')"""
     from playwright.sync_api import sync_playwright
     out = []
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--disable-blink-features=AutomationControlled'])
         ctx = b.new_context(viewport={'width': 1440, 'height': 900}, user_agent=UA)
+        rp = ctx.new_page()
+        for f in local_files:
+            im = load_local(rp, f)
+            if im is not None: out.append(('local', im, os.path.basename(f), company, 0))
+        if not url:
+            b.close(); return out
         pg = ctx.new_page()
         try:
             pg.goto(url, wait_until='networkidle', timeout=45000)
         except Exception:
             try: pg.goto(url, wait_until='domcontentloaded', timeout=45000)
-            except Exception as e: print('page failed', e); b.close(); return []
+            except Exception as e: print('page failed', str(e)[:80]); b.close(); return out
         pg.wait_for_timeout(2500)
         for s in ACCEPT:
             try: pg.locator(s).first.click(timeout=800); pg.wait_for_timeout(500); break
@@ -63,12 +79,11 @@ def fetch_candidates(url, company):
                 try: pg.wait_for_load_state('networkidle', timeout=15000)
                 except Exception: pass
                 pg.wait_for_timeout(1500)
-        # sources, ordered: header imgs and svgs by position on the page (top left first), css backgrounds, touch icons last
         srcs = [('img', i['src'], i) for i in c['imgs']] + [('svg', s['html'], s) for s in c['svgs']] + [('img', g['src'], g) for g in c['bgs']]
         srcs.sort(key=lambda x: (-x[2].get('prio', 0), x[2].get('top', 0)))
         srcs = srcs[:10] + [('icon', u, {'prio': 0}) for u in c['icons'][:2]]
         print(f"candidates: {len(c['imgs'])} img, {len(c['svgs'])} svg, {len(c['bgs'])} css, {len(c['icons'])} icon")
-        rp = ctx.new_page(); sprites = {}
+        sprites = {}
         for kind, src, meta in srcs:
             if kind != 'svg' or not meta.get('ext'): continue
             for ref in meta['ext']:
@@ -97,16 +112,25 @@ def fetch_candidates(url, company):
             png = render(rp, kind, src, meta)
             if png is None: print('  render failed', kind, (meta.get('alt') or src)[:70]); continue
             if meta.get('w', 999) < 60 or meta.get('h', 999) < 14: meta['prio'] = meta.get('prio', 0) - 6   # a 32px flag or dot on the page
-            if png is not None: out.append((kind, png, src if kind != 'svg' else 'inline svg ' + meta.get('alt', ''), meta.get('alt', ''), meta.get('prio', 0)))
+            out.append((kind, png, src if kind != 'svg' else 'inline svg ' + meta.get('alt', ''), meta.get('alt', ''), meta.get('prio', 0)))
         b.close()
     return out
+
+
+def load_local(pg, path):
+    try:
+        if path.lower().endswith('.svg'):
+            return render(pg, 'svg', open(path, encoding='utf-8', errors='replace').read(), {'color': '#000'})
+        return Image.open(path).convert('RGBA')
+    except Exception as e:
+        print('  local unreadable', os.path.basename(path), str(e)[:60]); return None
 
 
 def fullsize(u):
     """the header serves a thumbnail; ask the CDN for the big one (Shopify width=, _WxH suffix, imgix/cloudinary w=)"""
     u = re.sub(r'([?&])width=\d+', r'\g<1>width=1600', u)
     u = re.sub(r'([?&])w=\d+', r'\g<1>w=1600', u)
-    u = re.sub(r'_(\d{2,4})x(\d{2,4})?(_crop_\w+)?(\.(png|webp|gif|svg))', r'', u) if '/cdn/shop/' in u else u
+    u = re.sub(r'_(\d{2,4})x(\d{2,4})?(_crop_\w+)?(\.(png|webp|gif|svg))', r'', u) if '/cdn/shop/' in u else u
     return u
 
 
@@ -189,64 +213,100 @@ def score(kind, im, alt, company):
     return s, st
 
 
+def paint(im, rgb):
+    px = im.load(); w, h = im.size
+    for y in range(h):
+        for x in range(w):
+            a = px[x, y][3]
+            if a: px[x, y] = rgb + (a,)
+    return im
+
+
 def fix_for_dark(im, st):
     """returns (image, badge). one colour: paint white. bright colours: keep. dark parts in a multi-colour logo: white badge."""
     mono = st['colours'] <= 2 and (st['sat_mean'] < 0.12 or st['colours'] == 1)
     if mono or (st['colours'] <= 2 and st['dark_share'] > 0.5):
-        px = im.load(); w, h = im.size
-        for y in range(h):
-            for x in range(w):
-                a = px[x, y][3]
-                if a: px[x, y] = (255, 255, 255, a)
-        return im, False
+        return paint(im, (255, 255, 255)), False
     if st['dark_share'] > 0.12:
         if st['light_share'] > 0.12:                 # dark and white parts: a badge would eat the white parts, paint all white
-            px = im.load(); w, h = im.size
-            for y in range(h):
-                for x in range(w):
-                    a = px[x, y][3]
-                    if a: px[x, y] = (255, 255, 255, a)
-            return im, False
+            return paint(im, (255, 255, 255)), False
         return im, True
     return im, False
 
 
-def preview(slug, company, im, badge):
+def fix_for_light(im, st):
+    """returns (image, False). one colour: paint ink. light parts that would vanish on white: paint ink. dark or colourful: keep."""
+    mono = st['colours'] <= 2 and (st['sat_mean'] < 0.12 or st['colours'] == 1)
+    if mono or st['light_share'] > 0.3 or (st['lum_mean'] > 0.6 and st['sat_mean'] < 0.2):
+        return paint(im, INK), False
+    return im, False
+
+
+def font(size):
+    for fp in FONTS:
+        if os.path.exists(fp): return ImageFont.truetype(fp, size)
+    return ImageFont.load_default()
+
+
+def wordmark(company, rgb):
+    """the company name as a bold wordmark png: the fallback that always reads"""
+    fnt = font(300)
+    im = Image.new('RGBA', (6000, 420), (0, 0, 0, 0)); ImageDraw.Draw(im).text((20, 20), company, font=fnt, fill=rgb + (255,))
+    im = im.crop(im.getbbox())
+    if im.height > H: im = im.resize((max(1, round(im.width * H / im.height)), H), Image.LANCZOS)
+    return im
+
+
+def preview(path, bg, company, im, badge):
     W, Hh = 1600, 500
-    bg = Image.new('RGBA', (W, Hh), BG + (255,)); d = ImageDraw.Draw(bg)
+    pv = Image.new('RGBA', (W, Hh), bg + (255,)); d = ImageDraw.Draw(pv)
     y = 80
     if im is not None:
         lg = im.copy(); lg.thumbnail((700, 160), Image.LANCZOS)
         if badge:
             pad = 28; tile = Image.new('RGBA', (lg.width + 2 * pad, lg.height + 2 * pad), (255, 255, 255, 255))
             tile.alpha_composite(lg, (pad, pad)); lg = tile
-        bg.alpha_composite(lg, (80, y)); y += lg.height + 40
-    fnt = None
-    for fp in (r'C:\Windows\Fonts\arialbd.ttf', '/System/Library/Fonts/Supplemental/Arial Bold.ttf'):
-        if os.path.exists(fp): fnt = ImageFont.truetype(fp, 54); break
-    d.text((80, y), ('logo as it ships' if im is not None else 'no logo: deck shows the name in text') + f'  ·  {company}', font=fnt, fill=(159, 176, 170, 255))
-    bg.convert('RGB').save(os.path.join(PREV, slug + '.png'))
+        pv.alpha_composite(lg, (80, y)); y += lg.height + 40
+    grey = (159, 176, 170, 255) if sum(bg) < 384 else (110, 110, 105, 255)
+    d.text((80, y), ('logo as it ships' if im is not None else 'no logo: deck shows the name in text') + f'  ·  {company}', font=font(54), fill=grey)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    pv.convert('RGB').save(path)
 
 
-def main():
-    args = [a for a in sys.argv[1:] if not a.startswith('--')]
-    if len(args) < 3: print(__doc__); sys.exit(1)
-    slug, company, url = args[0], args[1], args[2]
-    spec = sys.argv[sys.argv.index('--spec') + 1] if '--spec' in sys.argv else None
-    if not url.startswith('http'): url = 'https://' + url
-    cands = []
-    local = [f for f in (f'{slug}.png', f'{slug}.svg') if os.path.exists(os.path.join(LOGOS, f))]
-    if '--keep' in sys.argv and local:
-        f = local[0]; p = os.path.join(LOGOS, f)
-        if f.endswith('.svg'):
-            from playwright.sync_api import sync_playwright
-            with sync_playwright() as pw:
-                b = pw.chromium.launch(); pg = b.new_page()
-                im = render(pg, 'svg', open(p, encoding='utf-8').read(), {'color': '#fff'}); b.close()
-        else: im = Image.open(p).convert('RGBA')
-        if im is not None: cands = [('local', im, f, company, 5)]
-    else:
-        cands = fetch_candidates(url, company)
+def guard(path, bg, badge=False):
+    """build-time check of a logo file -> None when fine, else what is wrong (the build must refuse it). Same rules for every deck."""
+    bg = hexrgb(bg) if isinstance(bg, str) else tuple(bg)
+    light = (0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]) / 255 > 0.5
+    if not os.path.exists(path): return 'missing'
+    if not path.lower().endswith('.png'): return 'not a png from logo.py'
+    im = Image.open(path).convert('RGBA'); st = analyse(im)
+    if st is None: return 'empty'
+    if im.height < 90: return f'too small ({im.width}x{im.height}), pixel mush at deck size'
+    if im.width / im.height < 1.3: return 'an icon, not a wordmark'
+    if light and st['lum_mean'] > 0.75: return 'light on a white slide'
+    if not light and st['lum_mean'] < 0.45 and not badge: return 'dark on a dark slide and no badge'
+    return None
+
+
+def hexrgb(s):
+    s = s.strip().lstrip('#')
+    if len(s) == 3: s = ''.join(c * 2 for c in s)
+    return (int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16))
+
+
+def run(slug, company, url, bg, out_dir, name=None, preview_dir=None, keep=False, on_none='remove', local=None):
+    """-> {'file': name or None, 'badge': bool, 'ok': bool, 'text': bool}; writes <out_dir>/<name> and the preview"""
+    bg = hexrgb(bg) if isinstance(bg, str) else tuple(bg)
+    light = (0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]) / 255 > 0.5
+    name = name or slug + '.png'
+    preview_dir = preview_dir or os.path.join(out_dir, '_preview')
+    os.makedirs(out_dir, exist_ok=True)
+    if url and not url.startswith('http'): url = 'https://' + url
+    stem = os.path.splitext(name)[0]
+    locals_ = local if local is not None else [os.path.join(out_dir, f) for f in (name, stem + '.svg', stem + '.png', slug + '.png', slug + '.svg')
+                                                if os.path.exists(os.path.join(out_dir, f))]
+    locals_ = list(dict.fromkeys(locals_))
+    cands = fetch_candidates('' if keep else url, company, locals_)
     best = None
     for kind, im, src, alt, prio in cands:
         im = strip_box(im); im = trim(im)
@@ -255,27 +315,51 @@ def main():
         if s > -99: s += prio
         print(f'  {s:6.2f}  {kind:5} {im.width}x{im.height}  {src[:90]}')
         if best is None or s > best[0]: best = (s, im, st, src)
+    for f in locals_:
+        if os.path.exists(f): os.remove(f)
+    res = {'file': None, 'badge': False, 'ok': False, 'text': False}
     if best is None or best[0] < 3:
-        print('RESULT no usable logo, deck shows the company name in text')
-        for f in local: os.remove(os.path.join(LOGOS, f))
-        preview(slug, company, None, False); out = None; badge = False
+        if on_none == 'text':
+            im = wordmark(company, INK if light else (255, 255, 255)); im.save(os.path.join(out_dir, name))
+            res.update(file=name, text=True)
+            print(f'RESULT no usable logo, wordmark of the company name written to {name}')
+            preview(os.path.join(preview_dir, slug + '.png'), bg, company, im, False)
+        else:
+            print('RESULT no usable logo, deck shows the company name in text')
+            preview(os.path.join(preview_dir, slug + '.png'), bg, company, None, False)
     else:
         im, st = best[1], best[2]
-        im, badge = fix_for_dark(im, st)
+        im, badge = (fix_for_light if light else fix_for_dark)(im, st)
         if im.height > H: im = im.resize((max(1, round(im.width * H / im.height)), H), Image.LANCZOS)
-        for f in local: os.remove(os.path.join(LOGOS, f))
-        out = slug + '.png'; im.save(os.path.join(LOGOS, out))
+        im.save(os.path.join(out_dir, name))
         st2 = analyse(im)
-        print(f'RESULT {out}  badge={badge}  lum={st2["lum_mean"]:.2f} colours={st["colours"]} from {best[3][:80]}')
-        preview(slug, company, im, badge)
-    print('preview', os.path.join(PREV, slug + '.png'))
+        res.update(file=name, badge=badge, ok=True)
+        print(f'RESULT {name}  badge={badge}  lum={st2["lum_mean"]:.2f} colours={st["colours"]} from {best[3][:80]}')
+        preview(os.path.join(preview_dir, slug + '.png'), bg, company, im, badge)
+    print('preview', os.path.join(preview_dir, slug + '.png'))
+    return res
+
+
+def opt(k, default=None):
+    return sys.argv[sys.argv.index(k) + 1] if k in sys.argv else default
+
+
+def main():
+    args = [a for i, a in enumerate(sys.argv[1:], 1) if not a.startswith('--') and not sys.argv[i - 1].startswith('--')]
+    if len(args) < 3 or '--bg' not in sys.argv or '--out' not in sys.argv: print(__doc__); sys.exit(1)
+    slug, company, url = args[0], args[1], args[2]
+    res = run(slug, company, url, opt('--bg'), opt('--out'), opt('--name'), opt('--preview'), '--keep' in sys.argv, opt('--on-none', 'remove'))
+    spec = opt('--spec')
     if spec:
+        key, bkey = opt('--key', 'logo'), opt('--badge-key')
         sp = json.load(open(spec, encoding='utf-8'))
-        sp.pop('logo', None); sp.pop('logo_badge', None)
-        if out:
-            sp['logo'] = out
-            if badge: sp['logo_badge'] = True
+        sp.pop(key, None)
+        if bkey: sp.pop(bkey, None)
+        if res['file']:
+            sp[key] = opt('--value', res['file'])
+            if bkey and res['badge']: sp[bkey] = True
         json.dump(sp, open(spec, 'w', encoding='utf-8'), indent=1, ensure_ascii=False); print('spec updated', spec)
+    if '--json' in sys.argv: print('JSON ' + json.dumps(res))
 
 
 if __name__ == '__main__':

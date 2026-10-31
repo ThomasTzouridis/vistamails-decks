@@ -134,12 +134,12 @@ html.sphone .offer h2{font-size:26px;max-width:none}html.sphone .steps{grid-temp
 html.sphone .step .n{font-size:10px}html.sphone .step h3{font-size:18px;margin:2px 0 1px}html.sphone .step p{font-size:13px}
 html.sphone .offerline{margin-top:20px;border-left-width:3px;padding-left:12px}html.sphone .offerline .lab{font-size:9px}html.sphone .offerline p{font-size:21px;max-width:none}
 .how{font-size:1.55cqw;line-height:1.55;color:#e4ece9;max-width:64cqw;margin:2cqw 0 0}html.sphone .how{font-size:16px;max-width:none;margin-top:16px}
-.offer{display:grid;grid-template-columns:1fr 33cqw;gap:4cqw;align-items:center}
-.offer .how{max-width:none}
+.offer{justify-content:flex-start}.ob{display:grid;grid-template-columns:1fr 30cqw;gap:5cqw;align-items:center;margin-top:1.5cqw;flex:1}
+.ol .how{max-width:none;margin:0 0 1.4cqw}.ol .how:first-child{margin-bottom:2.4cqw}.lb{display:block;font:600 .95cqw var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.3cqw}
 .show{position:relative;height:44cqw;width:33cqw}.show img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;animation:vmfade 24s infinite}
 @keyframes vmfade{0%{opacity:0}4%{opacity:1}12.5%{opacity:1}16.5%{opacity:0}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.show img{animation:none}.show img:first-child{opacity:1}}
-html.sphone .offer{display:flex}html.sphone .show{width:100%;height:46vh;flex:none;margin-top:10px}
+html.sphone .ob{display:flex;flex-direction:column;margin-top:12px}html.sphone .ol .how{margin:0 0 12px}html.sphone .lb{font-size:9px}html.sphone .show{width:100%;height:40vh;flex:none;margin-top:4px}
 </style>
 <style>/* keep the arrow buttons in scroll view */.reveal-scroll .reveal .controls{display:block!important;position:fixed}</style>
 <style>
@@ -251,11 +251,16 @@ html.sphone .contact.lead{font-size:14px}
 </div></section>
 
 <section aria-label="The offer"><div class="s offer">
-  <div class="ol">
-    <h2 class="in">How we work</h2>
-    <p class="how in">We run email and SMS retention for ecommerce brands. One job: get the customers you already have to buy again, and again. It starts with a short call where we look at your Klaviyo account together and show you where the money sits. Then we build the flows and campaigns, and you see the numbers every week. {{G_HEAD}}</p>
+  <h2 class="in">How we work</h2>
+  <div class="ob">
+    <div class="ol in">
+      <p class="how">{{G_HEAD}}</p>
+      <p class="how"><span class="lb">The target</span>Revenue up 20% within 60 days of the start date, measured against the baseline we capture at the start.</p>
+      <p class="how"><span class="lb">The condition</span>Your costs do not go up. No bigger ad budget, nothing added on top of what we agree.</p>
+      <p class="how"><span class="lb">If we miss it</span>{{G_MISS}}</p>
+    </div>
+    <div class="show in" aria-label="Emails we built"><img src="../assets/emails/e28.png" alt="" style="animation-delay:0s"><img src="../assets/emails/e29.png" alt="" style="animation-delay:3s"><img src="../assets/emails/e30.png" alt="" style="animation-delay:6s"><img src="../assets/emails/e31.png" alt="" style="animation-delay:9s"><img src="../assets/emails/e32.png" alt="" style="animation-delay:12s"><img src="../assets/emails/e33.png" alt="" style="animation-delay:15s"><img src="../assets/emails/e34.png" alt="" style="animation-delay:18s"><img src="../assets/emails/e35.png" alt="" style="animation-delay:21s"></div>
   </div>
-  <div class="show in" aria-label="Emails we built"><img src="../assets/emails/e28.png" alt="" style="animation-delay:0s"><img src="../assets/emails/e29.png" alt="" style="animation-delay:3s"><img src="../assets/emails/e30.png" alt="" style="animation-delay:6s"><img src="../assets/emails/e31.png" alt="" style="animation-delay:9s"><img src="../assets/emails/e32.png" alt="" style="animation-delay:12s"><img src="../assets/emails/e33.png" alt="" style="animation-delay:15s"><img src="../assets/emails/e34.png" alt="" style="animation-delay:18s"><img src="../assets/emails/e35.png" alt="" style="animation-delay:21s"></div>
   <button class="nx" type="button">More of our work<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
 </div></section>
 
