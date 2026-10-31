@@ -7,8 +7,10 @@ Spec fields (JSON):
   last_name     last name of the lead (cover: "Prepared for <first_name> <last_name>, <company>")
   domain        the lead's site, shown under the screenshot (required)
   shot          file in assets/shots/ (required, the cover shows it; take it with 3DforScience/_src/tools/shot.py)
-  logo          file in assets/leadlogos/ (white or light logo on transparent for the dark deck); omitted = company name in text.
-                The logo must be checked in the browser before sending; if it fails to load the page falls back to the company name in text.
+  logo          file in assets/leadlogos/, ALWAYS produced by tools/logo.py (py tools\logo.py <slug> "<Company>" https://<domain> --spec specs\<slug>.json):
+                it picks the site's wordmark, rejects icons, photos and pixel-small rasters, paints one-colour logos white, puts dark
+                multi-colour logos on a white badge (logo_badge) and writes a preview on the deck background to assets/leadlogos/_preview/.
+                No usable logo = key omitted = company name in text. build.py refuses a png that is small, square or dark without a badge.
   logo_badge    true = logo on a white badge (for dark logos)
   guarantee     "A" = 100% refund plus $5,000 transfer (message 1A), "B" = 100% refund only (message 1B). Default "B".
   cover_line    optional, default "More revenue for <company>, from the customers you already have."
@@ -38,7 +40,15 @@ for path in sys.argv[1:]:
     prep = f"{e(name)}, {co}" if name else co
     mark = f'<span class="co">{co}</span>'
     if sp.get('logo'):
-        assert os.path.exists(os.path.join(ROOT, 'assets', 'leadlogos', sp['logo'])), f'{path}: logo file missing'
+        lp = os.path.join(ROOT, 'assets', 'leadlogos', sp['logo'])
+        assert os.path.exists(lp), f'{path}: logo file missing'
+        if lp.lower().endswith('.png'):                      # the logo must read on the dark slide: sharp, wide, bright or on a badge
+            from PIL import Image
+            li = Image.open(lp).convert('RGBA'); op = [q for q in li.getdata() if q[3] > 128]
+            lum = sum(0.2126 * q[0] + 0.7152 * q[1] + 0.0722 * q[2] for q in op) / max(1, len(op)) / 255
+            bad = (li.height < 90 and 'pixel mush') or (li.width / li.height < 1.3 and 'an icon, not a wordmark') or (lum < 0.45 and not sp.get('logo_badge') and 'too dark for the slide')
+            assert not bad, f"{path}: logo {sp['logo']} is {bad}. Run: py tools\logo.py {sp['slug']} \"{sp['company']}\" https://{sp['domain']} --spec {path}"
+
         fb = "var s=document.createElement('span');s.className='co';s.textContent=this.alt;(this.closest('.llb')||this).replaceWith(s)"
         img = f'<img class="ll" src="../assets/leadlogos/{sp["logo"]}" alt="{co}" onerror="{fb}">'
         mark = f'<span class="llb">{img}</span>' if sp.get('logo_badge') else img

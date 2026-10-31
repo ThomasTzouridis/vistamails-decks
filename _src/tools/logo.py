@@ -87,12 +87,27 @@ def fetch_candidates(url, company):
             meta['html'] = src
         srcs = [(k, m.get('html', s) if k == 'svg' else s, m) for k, s, m in srcs]
         for kind, src, meta in srcs:
+            if kind != 'svg':
+                if re.search(r'\.(jpe?g)(\?|$)', src, re.I) and 'logo' not in src.lower() and meta.get('prio', 0) < 3: print('  skip photo', src[:70]); continue
+                big = fullsize(src)
+                if big != src:
+                    meta['nh'] = 9999; png = render(rp, kind, big, meta)
+                    if png is not None: meta['nh'] = png.height; src = big
+                    else: meta['nh'] = meta.get('nh', 0) if meta.get('nh', 0) != 9999 else 0
             png = render(rp, kind, src, meta)
             if png is None: print('  render failed', kind, (meta.get('alt') or src)[:70]); continue
             if meta.get('w', 999) < 60 or meta.get('h', 999) < 14: meta['prio'] = meta.get('prio', 0) - 6   # a 32px flag or dot on the page
             if png is not None: out.append((kind, png, src if kind != 'svg' else 'inline svg ' + meta.get('alt', ''), meta.get('alt', ''), meta.get('prio', 0)))
         b.close()
     return out
+
+
+def fullsize(u):
+    """the header serves a thumbnail; ask the CDN for the big one (Shopify width=, _WxH suffix, imgix/cloudinary w=)"""
+    u = re.sub(r'([?&])width=\d+', r'\g<1>width=1600', u)
+    u = re.sub(r'([?&])w=\d+', r'\g<1>w=1600', u)
+    u = re.sub(r'_(\d{2,4})x(\d{2,4})?(_crop_\w+)?(\.(png|webp|gif|svg))', r'', u) if '/cdn/shop/' in u else u
+    return u
 
 
 def render(pg, kind, src, meta):
@@ -121,18 +136,18 @@ def render(pg, kind, src, meta):
 
 def strip_box(im):
     """an opaque image (no alpha at all) usually sits in a white or coloured box: make the box colour transparent"""
-    a = im.getchannel('A')
-    if a.getextrema()[0] < 250: return im
+    a = im.getchannel('A'); hist = a.histogram()
+    if sum(hist[250:]) / (im.width * im.height) < 0.97: return im     # real transparency (a subpixel edge from the screenshot does not count)
     px = im.load(); w, h = im.size
     border = [px[x, y][:3] for x in range(0, w, max(1, w // 40)) for y in (0, h - 1)] + [px[x, y][:3] for y in range(0, h, max(1, h // 40)) for x in (0, w - 1)]
-    mean = tuple(sum(c[i] for c in border) / len(border) for i in range(3))
-    spread = max(max(abs(c[i] - mean[i]) for i in range(3)) for c in border)
-    if spread > 24: return im                       # photo or gradient, not a flat box
+    mean = tuple(sorted(c[i] for c in border)[len(border) // 2] for i in range(3))          # median: the logo may touch an edge
+    near = sum(1 for c in border if max(abs(c[i] - mean[i]) for i in range(3)) < 30) / len(border)
+    if near < 0.6: return im                        # photo or gradient, not a flat box
     out = im.copy(); po = out.load()
     for y in range(h):
         for x in range(w):
             r, g, b, _ = po[x, y]
-            if max(abs(r - mean[0]), abs(g - mean[1]), abs(b - mean[2])) < 28: po[x, y] = (r, g, b, 0)
+            if max(abs(r - mean[0]), abs(g - mean[1]), abs(b - mean[2])) < 40: po[x, y] = (r, g, b, 0)
     return out
 
 
@@ -151,10 +166,11 @@ def analyse(im):
     for p in op:
         k = (p[0] // 48, p[1] // 48, p[2] // 48); buckets[k] = buckets.get(k, 0) + 1
     sig = sorted(((c / len(op), k) for k, c in buckets.items()), reverse=True)
+    fine = sum(1 for s, k in sig if s > 0.015)
     sig = [(s, k) for s, k in sig if s > 0.06]
     sat = [max(p[:3]) - min(p[:3]) for p in op]
     return {'cover': len(op) / n, 'lum_mean': sum(lum) / len(lum), 'dark_share': sum(1 for l in lum if l < 0.35) / len(lum),
-            'light_share': sum(1 for l in lum if l > 0.85) / len(lum), 'colours': len(sig), 'sat_mean': sum(sat) / len(sat) / 255}
+            'light_share': sum(1 for l in lum if l > 0.85) / len(lum), 'colours': len(sig), 'fine': fine, 'sat_mean': sum(sat) / len(sat) / 255}
 
 
 def score(kind, im, alt, company):
@@ -169,7 +185,7 @@ def score(kind, im, alt, company):
     if h < 90: s -= 8                                # a raster this small is pixel mush at deck size
     if company.lower().split()[0] in (alt or '').lower(): s += 1.5
     if st['cover'] < 0.06: s -= 1.5                  # mostly empty: text with huge padding or a thin rule
-    if st['colours'] >= 5: s -= 4                    # a photo or a product shot, not a logo
+    if st['colours'] >= 5 or st['fine'] >= 9: s -= 8  # a photo or a product shot, not a logo
     return s, st
 
 
