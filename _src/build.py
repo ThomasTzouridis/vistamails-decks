@@ -26,8 +26,8 @@ HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 BOOK = 'https://calendly.com/umesh-gps/vistamails-email-marketing-discovery-call'
 LOGOS = ''.join(f'<img src="../assets/clients/{n}" alt="">' for n in
                 ["walkeepaws.png", "keebos.png", "lunarchi.png", "viebys.png", "pukingball.png", "allure.png", "celsius.png", "bamboobaby.png", "marbella.png", "martonfraser.png"])
-G = {'A': "20% more revenue in 60 days. Or you pay nothing and get $5,000.",
-     'B': "20% more revenue in 60 days. Or you pay nothing."}
+G = {'A': "The deal: 20% more revenue in 60 days. If not, you pay nothing and we send you $5,000.",
+     'B': "The deal: 20% more revenue in 60 days. If not, you pay nothing."}
 for path in sys.argv[1:]:
     sp = json.load(open(path, encoding='utf-8'))
     e = html.escape
