@@ -94,12 +94,22 @@ def pages(path, body):
         off += 100
 
 
-def live_code(slug):
+def link_parts(link):
+    """presentation URL -> (slug, lang). /<slug>/ = English deck, /<slug>/<lang>/ = the same deck in the lead's language (lang '' = English)."""
+    path = (link or '').strip()
+    for base in (SITE, ALT_SITE):
+        if path.lower().startswith(base): path = path[len(base):]; break
+    else: path = re.sub(r'^https?://[^/]+', '', path)
+    seg = [x for x in path.split('?')[0].split('#')[0].split('/') if x]
+    return (seg[0].lower() if seg else ''), (seg[1].lower() if len(seg) > 1 else '')
+
+
+def live_code(slug, lang=''):
     """200 = a VistaMails deck answers at the URL HeyReach sends. 0 = the custom domain does not answer at all (then the github.io mirror
     is checked and 200 there is reported as 200, the domain problem is flagged separately)."""
     for base in (SITE, ALT_SITE):
         try:
-            r = urllib.request.urlopen(urllib.request.Request(base + slug + '/', headers={'User-Agent': 'Mozilla/5.0', 'Cache-Control': 'no-cache'}), timeout=15)
+            r = urllib.request.urlopen(urllib.request.Request(base + slug + '/' + (lang + '/' if lang else ''), headers={'User-Agent': 'Mozilla/5.0', 'Cache-Control': 'no-cache'}), timeout=15)
             page = r.read().decode('utf-8', 'replace').lower()
             return 200 if r.status == 200 and 'vistamails' in page else r.status
         except urllib.error.HTTPError as e: return e.code
@@ -229,10 +239,10 @@ def list_facts(list_id, allmap):
         if not lid: continue
         cf = {f.get('name'): (f.get('value') or '').strip() for f in (i.get('customFields') or []) if f.get('name')}
         link = cf.get('presentation', '')
-        slug = link.rstrip('/').split('/')[-1].lower() if link else ''
+        slug, lang = link_parts(link)
         co = cf.get('normalizedcompanyname') or ''
         if slug and co: allmap.setdefault(slug, co)
-        out[lid] = {'company': co, 'link': link, 'slug': slug, 'first': (i.get('firstName') or '').strip(), 'last': (i.get('lastName') or '').strip(),
+        out[lid] = {'company': co, 'link': link, 'slug': slug, 'lang': lang, 'first': (i.get('firstName') or '').strip(), 'last': (i.get('lastName') or '').strip(),
                     'url': i.get('profileUrl') or ''}
     return out
 
@@ -250,7 +260,26 @@ def set_presentation(lead, link):
 # ---------- deck ----------
 def slug_files(slug):
     out = [slug + '/index.html', '_src/specs/' + slug + '.json', 'assets/shots/' + slug + '.jpg', 'assets/leadlogos/' + slug + '.png']
+    out += [slug + '/' + d + '/index.html' for d in (os.listdir(os.path.join(ROOT, slug)) if os.path.isdir(os.path.join(ROOT, slug)) else [])]
+    out += ['_src/specs/' + f for f in os.listdir(os.path.join(SRC, 'specs')) if f.startswith(slug + '.') and f.count('.') == 2]
     return [f for f in out if os.path.exists(os.path.join(ROOT, f))]
+
+
+def lang_page(slug, lang):
+    return bool(lang) and os.path.exists(os.path.join(ROOT, slug, lang, 'index.html'))
+
+
+def build_lang(slug, lead):
+    """The lead's language page next to the English deck: same spec plus lang, py build.py -> <slug>/<lang>/index.html. True when built."""
+    lang = lead.get('lang')
+    if not lang or lang_page(slug, lang): return True
+    sp = json.load(open(os.path.join(SRC, 'specs', slug + '.json'), encoding='utf-8')); sp['lang'] = lang
+    lp = os.path.join(SRC, 'specs', '%s.%s.json' % (slug, lang))
+    json.dump(sp, open(lp, 'w', encoding='utf-8'), indent=1, ensure_ascii=False)
+    rc, out = run([PY, os.path.join(SRC, 'build.py'), lp], 120, cwd=SRC)
+    if rc == 0 and lang_page(slug, lang): return True
+    say('language page failed', slug, lang, out[-300:])
+    return False
 
 
 def run(cmd, timeout, cwd=ROOT):
@@ -274,6 +303,12 @@ def take_shot(slug, domain):
 def build(slug, lead, state):
     """lead: company, first, last, domain, copy. True when the deck is built and committed."""
     st = state.setdefault(slug, {'status': 'new', 'attempts': 0})
+    if os.path.exists(os.path.join(ROOT, slug, 'index.html')) and lead.get('lang'):
+        if build_lang(slug, lead):
+            git('add', '--', *slug_files(slug))
+            git('commit', '-q', '-m', 'deck %s/%s (auto)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>' % (slug, lead['lang']))
+            say('built language page', slug, lead['lang']); return True
+        alert('language page %s/%s/ failed to build, the lead gets a 404 fallback until fixed' % (slug, lead['lang'])); return False
     st['attempts'] += 1
     t0 = time.time()
     ok, note = take_shot(slug, lead['domain'])
@@ -303,7 +338,7 @@ def build(slug, lead, state):
         json.dump(sp, open(spec_path, 'w', encoding='utf-8'), indent=1, ensure_ascii=False)
         logo_note += ' | logo refused by build guard, deck without logo'
         rc, out = run([PY, os.path.join(SRC, 'build.py'), spec_path], 120, cwd=SRC)
-    if rc == 0 and os.path.exists(os.path.join(ROOT, slug, 'index.html')):
+    if rc == 0 and os.path.exists(os.path.join(ROOT, slug, 'index.html')) and build_lang(slug, lead):
         git('add', '--', *slug_files(slug))
         git('commit', '-q', '-m', 'deck %s (auto)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>' % slug)
         st.update(status='built', at=now(), built_ts=time.time(), secs=int(time.time() - t0), note=(note + ' | ' + logo_note)[:300], company=lead['company'], domain=lead['domain'])
@@ -336,7 +371,7 @@ def build_fallback(allmap):
             '<p>Umesh is putting it together right now. In the meantime, you can book a call directly.</p>'
             '<a class="b" href="' + BOOK + '">Book a call with Umesh</a>'
             '<p style="margin-top:20px"><a href="https://thevistamails.com/">thevistamails.com</a></p></div>\n'
-            '<script>(()=>{const M=' + js + ';const s=(location.pathname.split("/").filter(Boolean).slice(-1)[0]||"").toLowerCase();'
+            '<script>(()=>{const M=' + js + ';const s=(location.pathname.split("/").filter(Boolean)[0]||"").toLowerCase();'
             'const c=M[s];if(c){document.getElementById("co").textContent=c;document.title=c+" \\u00d7 VistaMails"}})();</script>\n</body></html>\n')
     p = os.path.join(ROOT, '404.html')
     old = open(p, encoding='utf-8').read() if os.path.exists(p) else ''
@@ -373,7 +408,7 @@ def resolve(lid, info, f, state):
         return None, 'no website: Supabase %s for company "%s"' % (('candidates %s do not match the name' % cands) if cands else 'has no row for the LinkedIn handle', company)
     slug = f.get('slug') or slugify(company)
     if not slug: return None, 'no slug'
-    return {'slug': slug, 'company': company, 'first': f.get('first') or info['first'], 'last': f.get('last') or info['last'], 'domain': domain,
+    return {'slug': slug, 'lang': f.get('lang', ''), 'company': company, 'first': f.get('first') or info['first'], 'last': f.get('last') or info['last'], 'domain': domain,
             'copy': info['copy'], 'link': f.get('link', ''), 'url': f.get('url') or info['url'], 'campaign': info['campaign'], 'list': info['list'],
             'sender': info['sender'], 'status': info['status'], 'name': ('%s %s' % (f.get('first') or info['first'], f.get('last') or info['last'])).strip()}, ''
 
@@ -437,7 +472,8 @@ def main():
             if new:
                 alert('%d connected leads cannot get a deck, the fallback page stays: %s' % (len(new), '; '.join('%s (%s): %s' % (n, co, w) for _l, n, co, w in new[:6])))
                 known += [u[0] for u in new]
-        pending = [s for s in todo if state.get(s, {}).get('status') in (None, 'new', 'retry') and not os.path.exists(os.path.join(ROOT, s, 'index.html'))]
+        pending = [s for s in todo if (state.get(s, {}).get('status') in (None, 'new', 'retry') and not os.path.exists(os.path.join(ROOT, s, 'index.html')))
+                   or (todo[s].get('lang') and os.path.exists(os.path.join(ROOT, s, 'index.html')) and not lang_page(s, todo[s]['lang']))]
         say('slugs connected:', len(todo), 'to build:', len(pending), pending[:20])
         if a.dry:
             for lid, c in cs.items(): print(c.get('company'), '|', c.get('slug'), '|', c.get('domain'), '|', c.get('copy'), '|', c.get('link'), '|', c.get('why') or 'ok', '|', c['first_seen'])
@@ -460,7 +496,7 @@ def main():
         # presentation field: write it only when it is missing or names another slug
         for slug, lead in todo.items():
             want = SITE + slug + '/'
-            if lead['link'] and lead['link'].rstrip('/').split('/')[-1].lower() == slug: continue
+            if lead['link'] and link_parts(lead['link'])[0] == slug: continue
             if state.get(slug, {}).get('status') != 'built': continue
             try:
                 set_presentation(lead, want); cs[next(l for l, c in cs.items() if c.get('slug') == slug)]['link'] = want
@@ -477,10 +513,11 @@ def main():
         for lid, c in cs.items():
             if lid not in conn: continue
             if c.get('why'): continue
-            if c['slug'] not in done: done[c['slug']] = live_code(c['slug'])
-            c['live'] = done[c['slug']]
+            link_slug, link_lang = link_parts(c.get('link'))
+            kl = (c['slug'], link_lang)
+            if kl not in done: done[kl] = live_code(*kl)
+            c['live'] = done[kl]
             st = state.get(c['slug'], {})
-            link_slug = (c.get('link') or '').rstrip('/').split('/')[-1].lower()
             age = (time.time() - c['first_ts']) / 60
             if c.get('link') and link_slug != c['slug']: chk = 'URL MISMATCH: HeyReach sends /%s/, slug is /%s/' % (link_slug, c['slug'])
             elif not c.get('link'): chk = 'NO presentation FIELD IN HEYREACH'
